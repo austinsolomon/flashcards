@@ -1,0 +1,276 @@
+{
+  "name": "UE5 Asset Backup Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Nightly Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "notes": "Runs every night at 2:00 AM when team is offline"
+    },
+    {
+      "parameters": {
+        "command": "cd /home/user/UnrealProjects/MyGame && find Content -type f \\( -name '*.uasset' -o -name '*.umap' -o -name '*.cpp' -o -name '*.h' \\) -mtime -1"
+      },
+      "name": "Find Modified Assets",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "notes": "Find all UE5 assets modified in last 24 hours"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse file list from command output\nconst output = $input.item(0).json.stdout;\nconst files = output.split('\\n').filter(f => f.trim() !== '');\n\n// Categorize by file type and folder\nconst assetCategories = {\n  blueprints: [],\n  materials: [],\n  staticMeshes: [],\n  textures: [],\n  maps: [],\n  cpp: [],\n  other: []\n};\n\nfiles.forEach(file => {\n  if (file.includes('/Blueprints/')) assetCategories.blueprints.push(file);\n  else if (file.includes('/Materials/')) assetCategories.materials.push(file);\n  else if (file.includes('/StaticMeshes/') || file.includes('/Meshes/')) assetCategories.staticMeshes.push(file);\n  else if (file.includes('/Textures/')) assetCategories.textures.push(file);\n  else if (file.endsWith('.umap')) assetCategories.maps.push(file);\n  else if (file.endsWith('.cpp') || file.endsWith('.h')) assetCategories.cpp.push(file);\n  else assetCategories.other.push(file);\n});\n\nconst timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);\n\nreturn {\n  files,\n  totalFiles: files.length,\n  categories: assetCategories,\n  timestamp,\n  backupName: `UE5_Backup_${timestamp}`\n};"
+      },
+      "name": "Categorize Assets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300],
+      "notes": "Organize files by type for backup manifest"
+    },
+    {
+      "parameters": {
+        "command": "={{ `cd /home/user/UnrealProjects/MyGame && tar -czf /tmp/${$json.backupName}.tar.gz ${$json.files.join(' ')}` }}"
+      },
+      "name": "Create Backup Archive",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "notes": "Compress modified assets into dated archive"
+    },
+    {
+      "parameters": {
+        "command": "={{ `du -h /tmp/${$json.backupName}.tar.gz | cut -f1` }}"
+      },
+      "name": "Get Archive Size",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "notes": "Calculate backup file size"
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "resource": "file",
+        "operation": "upload",
+        "name": "={{ $json.backupName }}.tar.gz",
+        "binaryData": true,
+        "parents": {
+          "folderId": "YOUR_GOOGLE_DRIVE_BACKUP_FOLDER_ID"
+        }
+      },
+      "name": "Upload to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1250, 300],
+      "notes": "Upload to cloud backup folder"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.dropbox.com/2/files/upload",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "dropboxOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Dropbox-API-Arg",
+              "value": "={{ JSON.stringify({path: `/UE5_Backups/${$json.backupName}.tar.gz`, mode: 'add', autorename: true}) }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/octet-stream"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParametersJson": "={{ $binary.data }}"
+      },
+      "name": "Upload to Dropbox",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1250, 450],
+      "notes": "Redundant backup to Dropbox"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Create backup manifest\nconst manifest = {\n  backupName: $json.backupName,\n  timestamp: new Date().toISOString(),\n  stats: {\n    totalFiles: $json.totalFiles,\n    archiveSize: $json.archiveSize || 'calculating...',\n    categories: Object.entries($json.categories).map(([type, files]) => ({\n      type,\n      count: files.length,\n      files: files.slice(0, 5) // Include first 5 files as sample\n    }))\n  },\n  uploadedTo: ['Google Drive', 'Dropbox'],\n  projectPath: '/home/user/UnrealProjects/MyGame',\n  engineVersion: '5.3'\n};\n\n// Create human-readable summary\nconst summary = `\n# UE5 Backup Report - ${new Date().toLocaleDateString()}\n\n## Summary\n- **Backup Name:** ${manifest.backupName}\n- **Total Files:** ${manifest.stats.totalFiles}\n- **Archive Size:** ${manifest.stats.archiveSize}\n- **Cloud Locations:** Google Drive, Dropbox\n\n## Files by Category\n${manifest.stats.categories.map(cat => \n  `### ${cat.type} (${cat.count} files)\\n${cat.files.map(f => `- ${f}`).join('\\n')}`\n).join('\\n\\n')}\n\n## Backup Locations\n- **Google Drive:** /UE5_Backups/${manifest.backupName}.tar.gz\n- **Dropbox:** /UE5_Backups/${manifest.backupName}.tar.gz\n- **Local:** /tmp/${manifest.backupName}.tar.gz\n\n---\n*Generated: ${new Date().toISOString()}*\n`;\n\nreturn {\n  manifest,\n  summary\n};"
+      },
+      "name": "Generate Manifest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 375],
+      "notes": "Create backup metadata and summary"
+    },
+    {
+      "parameters": {
+        "mode": "jsonToBinary",
+        "options": {
+          "mimeType": "text/plain",
+          "fileName": "={{ $json.backupName }}_manifest.txt"
+        }
+      },
+      "name": "Convert to File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1,
+      "position": [1650, 375],
+      "notes": "Prepare manifest for storage"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "fileId": "YOUR_GOOGLE_SHEETS_BACKUP_LOG_ID",
+        "values": "={{ [[new Date().toISOString(), $json.manifest.backupName, $json.manifest.stats.totalFiles, $json.manifest.stats.archiveSize, 'Success']] }}"
+      },
+      "name": "Log to Backup Registry",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1850, 300],
+      "notes": "Track all backups in master spreadsheet"
+    },
+    {
+      "parameters": {
+        "channel": "#ue5-dev",
+        "text": "={{ `🎮 **UE5 Nightly Backup Complete**\\n\\n` +\n               `📦 **Backup:** ${$json.manifest.backupName}\\n` +\n               `📊 **Files Backed Up:** ${$json.manifest.stats.totalFiles}\\n` +\n               `💾 **Size:** ${$json.manifest.stats.archiveSize}\\n` +\n               `☁️ **Locations:** Google Drive, Dropbox\\n\\n` +\n               `**Modified Assets:**\\n` +\n               $json.manifest.stats.categories.map(c => `• ${c.type}: ${c.count} files`).join('\\n') }}"
+      },
+      "name": "Notify Team",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [1850, 450],
+      "notes": "Post summary to team Slack channel"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.totalFiles }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "name": "Check if Files Modified",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [450, 450],
+      "notes": "Only proceed if there are files to backup"
+    },
+    {
+      "parameters": {
+        "channel": "#ue5-dev",
+        "text": "ℹ️ No UE5 assets were modified in the last 24 hours. Backup skipped."
+      },
+      "name": "Notify No Changes",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [650, 500],
+      "notes": "Inform team when no backup needed"
+    },
+    {
+      "parameters": {
+        "command": "={{ `find /tmp -name 'UE5_Backup_*.tar.gz' -mtime +7 -delete` }}"
+      },
+      "name": "Cleanup Old Local Backups",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [2050, 375],
+      "notes": "Delete local backups older than 7 days to save disk space"
+    }
+  ],
+  "connections": {
+    "Nightly Trigger": {
+      "main": [
+        [{"node": "Find Modified Assets", "type": "main", "index": 0}]
+      ]
+    },
+    "Find Modified Assets": {
+      "main": [
+        [
+          {"node": "Categorize Assets", "type": "main", "index": 0},
+          {"node": "Check if Files Modified", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Check if Files Modified": {
+      "main": [
+        [{"node": "Create Backup Archive", "type": "main", "index": 0}],
+        [{"node": "Notify No Changes", "type": "main", "index": 0}]
+      ]
+    },
+    "Categorize Assets": {
+      "main": [
+        [{"node": "Create Backup Archive", "type": "main", "index": 0}]
+      ]
+    },
+    "Create Backup Archive": {
+      "main": [
+        [{"node": "Get Archive Size", "type": "main", "index": 0}]
+      ]
+    },
+    "Get Archive Size": {
+      "main": [
+        [
+          {"node": "Upload to Google Drive", "type": "main", "index": 0},
+          {"node": "Upload to Dropbox", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Upload to Google Drive": {
+      "main": [
+        [{"node": "Generate Manifest", "type": "main", "index": 0}]
+      ]
+    },
+    "Upload to Dropbox": {
+      "main": [
+        [{"node": "Generate Manifest", "type": "main", "index": 0}]
+      ]
+    },
+    "Generate Manifest": {
+      "main": [
+        [
+          {"node": "Convert to File", "type": "main", "index": 0},
+          {"node": "Log to Backup Registry", "type": "main", "index": 0},
+          {"node": "Notify Team", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [{"node": "Cleanup Old Local Backups", "type": "main", "index": 0}]
+      ]
+    },
+    "Log to Backup Registry": {
+      "main": [
+        [{"node": "Cleanup Old Local Backups", "type": "main", "index": 0}]
+      ]
+    },
+    "Notify Team": {
+      "main": [
+        [{"node": "Cleanup Old Local Backups", "type": "main", "index": 0}]
+      ]
+    }
+  },
+  "meta": {
+    "description": "**UE5 Asset Backup Automation**\n\n**Use Case:** Automatically backup all modified UE5 assets (blueprints, materials, meshes, maps, C++ code) every night to multiple cloud locations, with categorization, manifest generation, and team notifications.\n\n**How to Run:**\n1. Import this workflow JSON into n8n\n2. Configure credentials:\n   - Google Drive OAuth2 (for cloud backup)\n   - Dropbox OAuth2 (for redundant backup)\n   - Slack webhook (for team notifications)\n   - Google Sheets API (for backup registry)\n3. Update placeholders:\n   - `YOUR_GOOGLE_DRIVE_BACKUP_FOLDER_ID`\n   - `YOUR_GOOGLE_SHEETS_BACKUP_LOG_ID`\n   - Project path: `/home/user/UnrealProjects/MyGame`\n4. Activate workflow\n5. (Optional) Click 'Execute Workflow' to test immediately\n\n**Expected Output:**\n- Nightly backup of all assets modified in last 24 hours\n- Compressed archive uploaded to Google Drive + Dropbox\n- Backup manifest with file categorization\n- Entry added to master backup registry spreadsheet\n- Slack notification to #ue5-dev channel\n- Local cleanup of backups older than 7 days\n\n**Tier Classification:**\nThis is **Tier 1** because:\n- **Deterministic schedule:** Runs same workflow every night at 2 AM\n- **Predictable steps:** Same sequence regardless of input (find → categorize → backup → upload → notify)\n- **No AI/LLM:** Pure file operations and data aggregation\n- **Multi-step workflow:** Coordinates multiple tools (file system, compression, cloud storage, notifications)\n- **Conditional logic:** Simple if/else (skip if no files modified)\n- **No context awareness:** Doesn't analyze asset content or make intelligent decisions about what to backup\n\nThis differs from Tier 0 (which would be a single-click manual backup trigger) by orchestrating multiple systems automatically on a schedule. It differs from Tier 2 by not using any semantic understanding or AI-powered decision making."
+  },
+  "tags": [
+    {"name": "ue5"},
+    {"name": "backup"},
+    {"name": "automation"},
+    {"name": "tier-1"}
+  ]
+}

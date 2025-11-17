@@ -1,0 +1,285 @@
+{
+  "name": "AI-Powered Email Classifier and Router",
+  "nodes": [
+    {
+      "parameters": {
+        "mailbox": "INBOX",
+        "options": {
+          "customEmailConfig": "imap.gmail.com:993",
+          "allowUnauthorizedCerts": false
+        }
+      },
+      "name": "Email Trigger",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "notes": "Monitors inbox for new emails"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.from.address }}",
+              "operation": "notContains",
+              "value2": "@yourcompany.com"
+            }
+          ]
+        }
+      },
+      "name": "Filter External Only",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "notes": "Only process external emails"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract email content and prepare for AI analysis\nconst email = $input.item(0).json;\n\nconst emailData = {\n  from: email.from.address,\n  fromName: email.from.name || '',\n  subject: email.subject || '',\n  body: email.textPlain || email.html || '',\n  receivedDate: email.date,\n  // Truncate body to 2000 chars to save on API costs\n  bodyPreview: (email.textPlain || email.html || '').substring(0, 2000)\n};\n\n// Create prompt for Claude\nconst classificationPrompt = `Analyze this email and classify it into one of these categories:\n\n1. SALES_INQUIRY - Potential customer asking about products/services\n2. SUPPORT_REQUEST - Existing customer needing help\n3. PARTNERSHIP - Collaboration or partnership opportunity\n4. VENDOR - Supplier or service provider reaching out\n5. SPAM_MARKETING - Unsolicited marketing/sales pitch\n6. RECRUITING - Job candidate or recruiter\n7. PRESS_MEDIA - Media inquiry or press mention\n8. OTHER - Doesn't fit other categories\n\nEmail Details:\nFrom: ${emailData.fromName} <${emailData.from}>\nSubject: ${emailData.subject}\n\nBody:\n${emailData.bodyPreview}\n\nProvide your response in this exact JSON format:\n{\n  \"category\": \"CATEGORY_NAME\",\n  \"confidence\": 0.0-1.0,\n  \"reasoning\": \"brief explanation\",\n  \"suggestedAction\": \"what should be done with this email\",\n  \"urgency\": \"low|medium|high\",\n  \"extractedEntities\": {\n    \"companyName\": \"if mentioned\",\n    \"productInterest\": \"if mentioned\",\n    \"budget\": \"if mentioned\"\n  }\n}`;\n\nreturn {\n  emailData,\n  classificationPrompt\n};"
+      },
+      "name": "Prepare Email for Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 250],
+      "notes": "Extract email content and create AI prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $credentials.apiKey }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParametersJson": "={{ JSON.stringify({\n  model: 'claude-3-haiku-20240307',\n  max_tokens: 500,\n  messages: [{\n    role: 'user',\n    content: $json.classificationPrompt\n  }]\n}) }}"
+      },
+      "name": "Call Claude API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 250],
+      "notes": "Use Claude Haiku for fast, cost-effective classification"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Claude's response\nconst claudeResponse = $input.item(0).json;\nconst emailData = $input.item(0).json.emailData;\n\n// Extract the JSON from Claude's response\nconst responseText = claudeResponse.content[0].text;\nconst classificationData = JSON.parse(responseText);\n\nreturn {\n  email: emailData,\n  classification: classificationData\n};"
+      },
+      "name": "Parse AI Classification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 250],
+      "notes": "Extract classification from AI response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.classification.category }}",
+              "operation": "equals",
+              "value2": "SALES_INQUIRY"
+            }
+          ]
+        }
+      },
+      "name": "Route: Sales Inquiry",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [1250, 300],
+      "notes": "Route based on AI classification"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubspot.com/crm/v3/objects/deals",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotApi",
+        "sendBody": true,
+        "bodyParametersJson": "={{ JSON.stringify({\n  properties: {\n    dealname: `Inbound: ${$json.email.subject}`,\n    pipeline: 'default',\n    dealstage: 'appointmentscheduled',\n    amount: $json.classification.extractedEntities.budget || '',\n    closedate: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],\n    hubspot_owner_id: 'SALES_TEAM_OWNER_ID',\n    email_source: $json.email.from,\n    lead_source: 'Inbound Email',\n    description: `AI Classification: ${$json.classification.reasoning}\\n\\nOriginal Email:\\nFrom: ${$json.email.from}\\nSubject: ${$json.email.subject}\\n\\n${$json.email.bodyPreview}`\n  }\n}) }}"
+      },
+      "name": "Create Deal in HubSpot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1450, 150],
+      "notes": "Sales inquiries become deals"
+    },
+    {
+      "parameters": {
+        "channel": "#sales-leads",
+        "text": "={{ `🎯 **New Sales Inquiry** (AI Confidence: ${Math.round($json.classification.confidence * 100)}%)\\n\\n` +\n               `**From:** ${$json.email.fromName} <${$json.email.from}>\\n` +\n               `**Subject:** ${$json.email.subject}\\n` +\n               `**Urgency:** ${$json.classification.urgency.toUpperCase()}\\n\\n` +\n               `**AI Reasoning:** ${$json.classification.reasoning}\\n\\n` +\n               `**Suggested Action:** ${$json.classification.suggestedAction}\\n\\n` +\n               ($json.classification.extractedEntities.companyName ? `**Company:** ${$json.classification.extractedEntities.companyName}\\n` : '') +\n               ($json.classification.extractedEntities.productInterest ? `**Interest:** ${$json.classification.extractedEntities.productInterest}\\n` : '') +\n               `\\n_Deal created in HubSpot_` }}"
+      },
+      "name": "Alert Sales Team",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [1650, 150],
+      "notes": "Notify sales channel"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.zendesk.com/api/v2/tickets",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "zendeskApi",
+        "sendBody": true,
+        "bodyParametersJson": "={{ JSON.stringify({\n  ticket: {\n    subject: $json.email.subject,\n    comment: {\n      body: `AI Classification: Support Request (${Math.round($json.classification.confidence * 100)}% confidence)\\n\\n${$json.classification.reasoning}\\n\\n---\\n\\n${$json.email.bodyPreview}`\n    },\n    priority: $json.classification.urgency,\n    requester: {\n      email: $json.email.from,\n      name: $json.email.fromName\n    },\n    tags: ['ai-classified', 'email-inbound', $json.classification.category.toLowerCase()]\n  }\n}) }}"
+      },
+      "name": "Create Support Ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1450, 300],
+      "notes": "Support requests become tickets"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.airtable.com/v0/YOUR_BASE_ID/Partnerships",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableApi",
+        "sendBody": true,
+        "bodyParametersJson": "={{ JSON.stringify({\n  records: [{\n    fields: {\n      'Contact Name': $json.email.fromName,\n      'Email': $json.email.from,\n      'Subject': $json.email.subject,\n      'Status': 'New',\n      'Source': 'Inbound Email',\n      'AI Summary': $json.classification.reasoning,\n      'Urgency': $json.classification.urgency,\n      'Received Date': new Date().toISOString().split('T')[0]\n    }\n  }]\n}) }}"
+      },
+      "name": "Log Partnership Inquiry",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1450, 450],
+      "notes": "Partnership inquiries to Airtable"
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "folderId": "SPAM_FOLDER_ID"
+      },
+      "name": "Move to Spam",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [1450, 600],
+      "notes": "Archive spam/marketing emails"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.notion.com/v1/pages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParametersJson": "={{ JSON.stringify({\n  parent: { database_id: 'YOUR_INBOX_DATABASE_ID' },\n  properties: {\n    'Name': {\n      title: [{\n        text: { content: $json.email.subject }\n      }]\n    },\n    'Category': {\n      select: { name: $json.classification.category }\n    },\n    'From': {\n      email: $json.email.from\n    },\n    'Status': {\n      select: { name: 'To Review' }\n    }\n  },\n  children: [{\n    object: 'block',\n    type: 'paragraph',\n    paragraph: {\n      rich_text: [{\n        type: 'text',\n        text: { content: $json.email.bodyPreview }\n      }]\n    }\n  }]\n}) }}"
+      },
+      "name": "Save to Inbox",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1450, 750],
+      "notes": "Other emails go to inbox for manual review"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "YOUR_CLASSIFICATION_LOG_SHEET_ID",
+        "range": "Sheet1",
+        "values": "={{ [[\n  new Date().toISOString(),\n  $json.email.from,\n  $json.email.subject,\n  $json.classification.category,\n  $json.classification.confidence,\n  $json.classification.urgency,\n  $json.classification.reasoning\n]] }}"
+      },
+      "name": "Log All Classifications",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1850, 450],
+      "notes": "Track AI classification accuracy for training"
+    }
+  ],
+  "connections": {
+    "Email Trigger": {
+      "main": [
+        [{"node": "Filter External Only", "type": "main", "index": 0}]
+      ]
+    },
+    "Filter External Only": {
+      "main": [
+        [{"node": "Prepare Email for Analysis", "type": "main", "index": 0}]
+      ]
+    },
+    "Prepare Email for Analysis": {
+      "main": [
+        [{"node": "Call Claude API", "type": "main", "index": 0}]
+      ]
+    },
+    "Call Claude API": {
+      "main": [
+        [{"node": "Parse AI Classification", "type": "main", "index": 0}]
+      ]
+    },
+    "Parse AI Classification": {
+      "main": [
+        [{"node": "Route: Sales Inquiry", "type": "main", "index": 0}]
+      ]
+    },
+    "Route: Sales Inquiry": {
+      "main": [
+        [{"node": "Create Deal in HubSpot", "type": "main", "index": 0}],
+        [{"node": "Create Support Ticket", "type": "main", "index": 0}],
+        [{"node": "Log Partnership Inquiry", "type": "main", "index": 0}],
+        [{"node": "Move to Spam", "type": "main", "index": 0}],
+        [{"node": "Save to Inbox", "type": "main", "index": 0}]
+      ]
+    },
+    "Create Deal in HubSpot": {
+      "main": [
+        [
+          {"node": "Alert Sales Team", "type": "main", "index": 0},
+          {"node": "Log All Classifications", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Create Support Ticket": {
+      "main": [
+        [{"node": "Log All Classifications", "type": "main", "index": 0}]
+      ]
+    },
+    "Log Partnership Inquiry": {
+      "main": [
+        [{"node": "Log All Classifications", "type": "main", "index": 0}]
+      ]
+    },
+    "Move to Spam": {
+      "main": [
+        [{"node": "Log All Classifications", "type": "main", "index": 0}]
+      ]
+    },
+    "Save to Inbox": {
+      "main": [
+        [{"node": "Log All Classifications", "type": "main", "index": 0}]
+      ]
+    }
+  },
+  "meta": {
+    "description": "**AI-Powered Email Classifier and Router**\n\n**Use Case:** Automatically classify incoming emails using Claude AI, extract key information (company name, budget, product interest), and route to appropriate systems (HubSpot for sales, Zendesk for support, etc.) based on semantic understanding of content.\n\n**How to Run:**\n\n1. **Import workflow** into n8n\n\n2. **Configure credentials:**\n   - Gmail IMAP (for email monitoring)\n   - Anthropic API key (for Claude)\n   - HubSpot API (for deal creation)\n   - Zendesk API (for ticket creation)\n   - Airtable API (for partnership tracking)\n   - Slack webhook (for notifications)\n   - Google Sheets API (for classification logging)\n\n3. **Update configuration:**\n   - Email inbox to monitor\n   - HubSpot owner IDs\n   - Spam folder ID\n   - Airtable base ID\n   - Notion database ID\n   - Google Sheets ID\n\n4. **Activate workflow** - it will monitor inbox continuously\n\n5. **(Optional) Test:** Forward a test email to your monitored inbox\n\n**Expected Output:**\n\n**Example 1: Sales Inquiry**\n- Email: \"Hi, we're interested in your Enterprise plan for our 500-person company\"\n- AI Classification: SALES_INQUIRY (confidence: 0.92)\n- Actions:\n  - Creates deal in HubSpot with extracted company size\n  - Posts to #sales-leads Slack channel\n  - Logs classification to tracking sheet\n\n**Example 2: Support Request**\n- Email: \"Our integration stopped working this morning, getting 401 errors\"\n- AI Classification: SUPPORT_REQUEST (confidence: 0.88, urgency: high)\n- Actions:\n  - Creates high-priority ticket in Zendesk\n  - Logs classification\n\n**Example 3: Spam**\n- Email: \"Buy our amazing SEO services! Limited time offer!\"\n- AI Classification: SPAM_MARKETING (confidence: 0.95)\n- Actions:\n  - Moves to spam folder\n  - Logs for accuracy tracking\n\n**Tier Classification:**\n\nThis is **Tier 2** because:\n\n1. **Context-aware reasoning:** Uses LLM to understand email intent semantically, not just keyword matching\n2. **Entity extraction:** AI identifies company names, budgets, product interests from unstructured text\n3. **Confidence scoring:** Provides probabilistic classification with reasoning\n4. **n8n orchestration:** Workflow engine coordinates the process, LLM provides intelligence\n5. **Still deterministic routing:** Once classified, routing logic is fixed (if SALES_INQUIRY → create deal)\n6. **Single LLM call:** One API call per email for classification, not multi-step reasoning\n\nThis differs from **Tier 1** (which would use keyword-based rules) by understanding semantic meaning. It differs from **Tier 3** (single-purpose agent) by not having autonomous tool use - the LLM only provides classification, n8n handles all actions.\n\n**Cost Optimization:**\n- Uses Claude Haiku (cheapest model) at ~$0.0003/email\n- Truncates email body to 2000 chars\n- ~$0.90 per 3000 emails classified\n\n**Accuracy Improvement:**\n- All classifications logged to Google Sheets\n- Periodically review misclassifications\n- Update prompt with examples of edge cases\n- Track confidence scores to tune routing thresholds"
+  },
+  "tags": [
+    {"name": "gtm"},
+    {"name": "email"},
+    {"name": "ai-classification"},
+    {"name": "claude"},
+    {"name": "tier-2"}
+  ]
+}

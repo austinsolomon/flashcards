@@ -1,0 +1,262 @@
+{
+  "name": "Daily Note Creator with PARA Integration",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Morning Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "notes": "Runs every morning at 6:00 AM"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "calendar",
+        "operation": "getAll",
+        "calendarId": "primary",
+        "start": "={{ $now.startOf('day').toISO() }}",
+        "end": "={{ $now.endOf('day').toISO() }}",
+        "options": {
+          "maxResults": 50
+        }
+      },
+      "name": "Get Today's Calendar",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [450, 200],
+      "notes": "Fetch all calendar events for today"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.todoist.com/rest/v2/tasks",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "todoistApi",
+        "options": {
+          "qs": {
+            "filter": "today | overdue"
+          }
+        }
+      },
+      "name": "Get Today's Tasks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 350],
+      "notes": "Fetch tasks due today + overdue from Todoist"
+    },
+    {
+      "parameters": {
+        "command": "cd ~/Library/Mobile\\ Documents/iCloud~md~obsidian/Documents/MyVault/Inbox && ls -1 *.md | wc -l"
+      },
+      "name": "Count Inbox Items",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [450, 500],
+      "notes": "Count unprocessed notes in Obsidian inbox"
+    },
+    {
+      "parameters": {
+        "command": "cd ~/Library/Mobile\\ Documents/iCloud~md~obsidian/Documents/MyVault && find . -name '*.md' -mtime -1 | wc -l"
+      },
+      "name": "Count Yesterday's Notes",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [450, 650],
+      "notes": "Count notes created/modified yesterday"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process calendar events\nconst events = $input.item(0).json || [];\n\n// Categorize by time blocks\nconst morning = [];\nconst afternoon = [];\nconst evening = [];\n\nevents.forEach(event => {\n  const startTime = new Date(event.start.dateTime || event.start.date);\n  const hour = startTime.getHours();\n  \n  const eventItem = {\n    time: startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),\n    title: event.summary,\n    location: event.location || '',\n    link: event.htmlLink\n  };\n  \n  if (hour < 12) morning.push(eventItem);\n  else if (hour < 17) afternoon.push(eventItem);\n  else evening.push(eventItem);\n});\n\nreturn {\n  totalEvents: events.length,\n  morning,\n  afternoon,\n  evening\n};"
+      },
+      "name": "Process Calendar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 200],
+      "notes": "Organize events by time blocks"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process tasks\nconst tasks = $input.item(0).json || [];\n\n// Categorize by project and priority\nconst byProject = {};\nconst highPriority = [];\n\ntasks.forEach(task => {\n  const project = task.project_id || 'Inbox';\n  \n  if (!byProject[project]) {\n    byProject[project] = [];\n  }\n  \n  const taskItem = {\n    content: task.content,\n    priority: task.priority,\n    due: task.due ? task.due.date : 'No due date',\n    url: task.url,\n    labels: task.labels || []\n  };\n  \n  byProject[project].push(taskItem);\n  \n  if (task.priority >= 3) {\n    highPriority.push(taskItem);\n  }\n});\n\nreturn {\n  totalTasks: tasks.length,\n  byProject,\n  highPriority\n};"
+      },
+      "name": "Process Tasks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 350],
+      "notes": "Organize tasks by project and priority"
+    },
+    {
+      "parameters": {},
+      "name": "Merge All Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [850, 400],
+      "notes": "Combine calendar, tasks, and stats"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all data\nconst calendar = $input.item(0).json;\nconst tasks = $input.item(1).json;\nconst inboxCount = parseInt($input.item(2).json.stdout.trim());\nconst yesterdayNotes = parseInt($input.item(3).json.stdout.trim());\n\nconst today = new Date();\nconst dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD\nconst dayName = today.toLocaleDateString('en-US', { weekday: 'long' });\n\n// Create daily note content in Obsidian format\nconst noteContent = `---\ndate: ${dateStr}\nday: ${dayName}\ntags: [daily-note, ${today.getFullYear()}, ${today.toLocaleDateString('en-US', { month: 'long' }).toLowerCase()}]\ninbox_count: ${inboxCount}\nevents: ${calendar.totalEvents}\ntasks: ${tasks.totalTasks}\n---\n\n# ${dayName}, ${today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}\n\n## 🎯 Today's Focus\n\n<!-- What are your top 3 priorities for today? -->\n\n1. \n2. \n3. \n\n---\n\n## 📅 Schedule\n\n${calendar.totalEvents === 0 ? '_No events scheduled today_' : ''}\n\n${calendar.morning.length > 0 ? `### 🌅 Morning\\n${calendar.morning.map(e => `- **${e.time}** - ${e.title}${e.location ? ` @ ${e.location}` : ''}`).join('\\n')}\\n` : ''}\n\n${calendar.afternoon.length > 0 ? `### ☀️ Afternoon\\n${calendar.afternoon.map(e => `- **${e.time}** - ${e.title}${e.location ? ` @ ${e.location}` : ''}`).join('\\n')}\\n` : ''}\n\n${calendar.evening.length > 0 ? `### 🌙 Evening\\n${calendar.evening.map(e => `- **${e.time}** - ${e.title}${e.location ? ` @ ${e.location}` : ''}`).join('\\n')}\\n` : ''}\n\n---\n\n## ✅ Tasks (${tasks.totalTasks})\n\n${tasks.highPriority.length > 0 ? `### 🔴 High Priority\\n${tasks.highPriority.map(t => `- [ ] ${t.content}`).join('\\n')}\\n` : ''}\n\n${Object.entries(tasks.byProject).map(([project, projectTasks]) => \n  `### ${project} (${projectTasks.length})\\n${projectTasks.map(t => `- [ ] ${t.content}${t.labels.length > 0 ? ` #${t.labels.join(' #')}` : ''}`).join('\\n')}`\n).join('\\n\\n')}\n\n---\n\n## 📝 Notes\n\n<!-- Capture thoughts, insights, and observations throughout the day -->\n\n\n\n---\n\n## 🧠 Knowledge Work\n\n### 💡 Ideas\n\n\n\n### 📚 Learned Today\n\n\n\n### 🔗 Connections Made\n\n<!-- Link to related notes -->\n\n\n\n---\n\n## 📊 Daily Stats\n\n- **📥 Inbox Items:** ${inboxCount} ${inboxCount > 10 ? '⚠️ _Time to process!_' : ''}\n- **📝 Notes Created Yesterday:** ${yesterdayNotes}\n- **📅 Events Today:** ${calendar.totalEvents}\n- **✅ Tasks Due:** ${tasks.totalTasks}\n\n---\n\n## 🔄 Daily Review (End of Day)\n\n### What went well?\n\n\n\n### What could be improved?\n\n\n\n### Tomorrow's preparation\n\n\n\n---\n\n## 📎 Quick Links\n\n- [[Weekly Review]]\n- [[Monthly Goals]]\n- [[Active Projects]]\n- [[Inbox]]\n\n---\n\n_Created automatically on ${today.toLocaleString()}_\n`;\n\nconst filename = `${dateStr}-daily.md`;\nconst vaultPath = '~/Library/Mobile Documents/iCloud~md~obsidian/Documents/MyVault';\n\nreturn {\n  noteContent,\n  filename,\n  vaultPath,\n  dateStr,\n  stats: {\n    inboxCount,\n    yesterdayNotes,\n    eventsToday: calendar.totalEvents,\n    tasksToday: tasks.totalTasks\n  }\n};"
+      },
+      "name": "Generate Daily Note",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 400],
+      "notes": "Create formatted Obsidian daily note"
+    },
+    {
+      "parameters": {
+        "command": "={{ `echo '${$json.noteContent.replace(/'/g, \"'\\\\''\")}' > '${$json.vaultPath}/Daily Notes/${$json.filename}'` }}"
+      },
+      "name": "Write Daily Note File",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1250, 400],
+      "notes": "Save note to Obsidian vault"
+    },
+    {
+      "parameters": {
+        "url": "obsidian://open?vault=MyVault&file=Daily%20Notes%2F{{ encodeURIComponent($json.filename) }}"
+      },
+      "name": "Open in Obsidian",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1450, 400],
+      "notes": "Open the created note in Obsidian app"
+    },
+    {
+      "parameters": {
+        "title": "📝 Daily Note Created",
+        "message": "={{ `${$json.dateStr} daily note ready\\n\\n` +\n                   `📅 ${$json.stats.eventsToday} events\\n` +\n                   `✅ ${$json.stats.tasksToday} tasks\\n` +\n                   `📥 ${$json.stats.inboxCount} inbox items` }}",
+        "options": {
+          "sound": "default",
+          "url": "={{ `obsidian://open?vault=MyVault&file=Daily%20Notes/${encodeURIComponent($json.filename)}` }}"
+        }
+      },
+      "name": "Send iOS Notification",
+      "type": "n8n-nodes-base.pushover",
+      "typeVersion": 1,
+      "position": [1450, 550],
+      "notes": "Notify on phone that daily note is ready"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.stats.inboxCount }}",
+              "operation": "larger",
+              "value2": 20
+            }
+          ]
+        }
+      },
+      "name": "Check Inbox Overload",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1250, 550],
+      "notes": "Alert if inbox is getting too full"
+    },
+    {
+      "parameters": {
+        "title": "⚠️ Inbox Overload",
+        "message": "={{ `You have ${$json.stats.inboxCount} items in your Obsidian inbox. Time to process and organize!` }}",
+        "options": {
+          "priority": 1,
+          "sound": "pushover"
+        }
+      },
+      "name": "Send Inbox Alert",
+      "type": "n8n-nodes-base.pushover",
+      "typeVersion": 1,
+      "position": [1450, 700],
+      "notes": "Remind to process inbox"
+    }
+  ],
+  "connections": {
+    "Morning Trigger": {
+      "main": [
+        [
+          {"node": "Get Today's Calendar", "type": "main", "index": 0},
+          {"node": "Get Today's Tasks", "type": "main", "index": 0},
+          {"node": "Count Inbox Items", "type": "main", "index": 0},
+          {"node": "Count Yesterday's Notes", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Get Today's Calendar": {
+      "main": [
+        [{"node": "Process Calendar", "type": "main", "index": 0}]
+      ]
+    },
+    "Get Today's Tasks": {
+      "main": [
+        [{"node": "Process Tasks", "type": "main", "index": 0}]
+      ]
+    },
+    "Process Calendar": {
+      "main": [
+        [{"node": "Merge All Data", "type": "main", "index": 0}]
+      ]
+    },
+    "Process Tasks": {
+      "main": [
+        [{"node": "Merge All Data", "type": "main", "index": 1}]
+      ]
+    },
+    "Count Inbox Items": {
+      "main": [
+        [{"node": "Merge All Data", "type": "main", "index": 2}]
+      ]
+    },
+    "Count Yesterday's Notes": {
+      "main": [
+        [{"node": "Merge All Data", "type": "main", "index": 3}]
+      ]
+    },
+    "Merge All Data": {
+      "main": [
+        [{"node": "Generate Daily Note", "type": "main", "index": 0}]
+      ]
+    },
+    "Generate Daily Note": {
+      "main": [
+        [
+          {"node": "Write Daily Note File", "type": "main", "index": 0},
+          {"node": "Check Inbox Overload", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Write Daily Note File": {
+      "main": [
+        [
+          {"node": "Open in Obsidian", "type": "main", "index": 0},
+          {"node": "Send iOS Notification", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Check Inbox Overload": {
+      "main": [
+        [{"node": "Send Inbox Alert", "type": "main", "index": 0}]
+      ]
+    }
+  },
+  "meta": {
+    "description": "**Daily Note Creator with PARA Integration**\n\n**Use Case:** Every morning, automatically create a structured daily note in Obsidian that aggregates your calendar events, tasks, and vault statistics, following the PARA method for knowledge management.\n\n**How to Run:**\n1. Import this workflow into n8n\n2. Configure credentials:\n   - Google Calendar OAuth2 (for calendar integration)\n   - Todoist API token (for task management)\n   - Pushover API (for mobile notifications)\n3. Update paths:\n   - Obsidian vault path (currently set to macOS iCloud location)\n   - Vault name in Obsidian URL schemes\n4. Create folder structure in Obsidian:\n   - `/Daily Notes/` folder\n   - `/Inbox/` folder\n5. Activate workflow\n6. (Optional) Test by clicking 'Execute Workflow'\n\n**Expected Output:**\n\n**Daily Note Structure:**\n- YAML frontmatter with metadata (date, tags, stats)\n- Focus section for top 3 priorities\n- Schedule organized by time blocks (morning/afternoon/evening)\n- Tasks categorized by project with priority highlighting\n- Sections for notes, ideas, and learning\n- Daily stats dashboard (inbox count, productivity metrics)\n- Evening review prompts\n- Quick links to key vault sections\n\n**File Location:**\n`/Daily Notes/2025-01-15-daily.md`\n\n**User Experience:**\n1. Wake up → Daily note already created\n2. Receive iOS notification with summary\n3. Tap notification → Opens directly to today's note in Obsidian\n4. All events and tasks pre-populated\n5. Fill in Focus section during morning routine\n6. Use throughout day for capture and review\n7. Complete evening review section before bed\n\n**Tier Classification:**\nThis is **Tier 1** because:\n- **Deterministic schedule:** Runs same workflow every morning at 6 AM\n- **Predictable data aggregation:** Always pulls calendar + tasks + stats in same sequence\n- **Template-based generation:** Uses fixed note structure, no AI customization\n- **Multi-system orchestration:** Coordinates Google Calendar, Todoist, file system, and notifications\n- **Conditional logic:** Simple if/else for inbox overload alert\n- **No AI/LLM:** Pure data aggregation and template filling\n- **No context awareness:** Doesn't analyze past notes or make intelligent suggestions\n\nThis differs from Tier 0 (which would be manually creating a daily note from template) by automating the entire process with data from multiple sources. It differs from Tier 2 by not using any semantic understanding or AI-powered personalization of content."
+  },
+  "tags": [
+    {"name": "obsidian"},
+    {"name": "pkm"},
+    {"name": "daily-notes"},
+    {"name": "para"},
+    {"name": "tier-1"}
+  ]
+}
