@@ -1,0 +1,13 @@
+# Automation Workflow Intake System - Python Dependencies
+
+# Database
+psycopg2-binary==2.9.9
+
+# Configuration
+python-dotenv==1.0.0
+
+# Data formats
+PyYAML==6.0.1
+
+# CLI
+rich==13.7.0
