@@ -1,0 +1,273 @@
+{
+  "name": "AI Asset Tagger and Organizer",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "/home/user/UnrealProjects/MyGame/Content/ToProcess/",
+        "watch": true,
+        "events": ["add"]
+      },
+      "name": "Watch Asset Folder",
+      "type": "n8n-nodes-base.filesystemWatcher",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "notes": "Triggers when new asset files are added"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.file }}",
+              "operation": "regex",
+              "value2": "\\.(png|jpg|jpeg|fbx|obj|uasset|blend)$"
+            }
+          ]
+        }
+      },
+      "name": "Filter Asset Types",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "notes": "Only process known asset formats"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract file information\nconst filePath = $input.item(0).json.file;\nconst fileName = filePath.split('/').pop();\nconst fileExt = fileName.split('.').pop().toLowerCase();\nconst fileNameWithoutExt = fileName.replace(`.${fileExt}`, '');\n\n// Determine asset type from extension\nconst assetTypeMap = {\n  'png': 'texture',\n  'jpg': 'texture',\n  'jpeg': 'texture',\n  'fbx': '3d_model',\n  'obj': '3d_model',\n  'uasset': 'ue_asset',\n  'blend': 'source_file'\n};\n\nconst assetType = assetTypeMap[fileExt] || 'unknown';\n\n// Get file stats\nconst fs = require('fs');\nconst stats = fs.statSync(filePath);\nconst fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);\n\n// For images, we can analyze them with AI\n// For 3D models, we'll analyze the filename and metadata\nlet analysisNeeded = ['texture', '3d_model'].includes(assetType);\n\nreturn {\n  filePath,\n  fileName,\n  fileNameWithoutExt,\n  fileExt,\n  assetType,\n  fileSizeMB,\n  analysisNeeded,\n  createdAt: stats.birthtime.toISOString()\n};"
+      },
+      "name": "Extract File Metadata",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 250],
+      "notes": "Get file information for AI analysis"
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "data",
+        "fileName": "={{ $json.fileName }}",
+        "options": {}
+      },
+      "name": "Read File as Binary",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [850, 200],
+      "notes": "Load file for image analysis (if texture)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Create AI prompt based on asset type\nconst metadata = $input.item(0).json;\n\nlet prompt = '';\n\nif (metadata.assetType === 'texture') {\n  prompt = `Analyze this game texture image and provide detailed categorization.\n\nFilename: ${metadata.fileName}\n\nProvide response in this JSON format:\n{\n  \"category\": \"one of: albedo, normal, roughness, metallic, ambient_occlusion, height, emission, opacity\",\n  \"materialType\": \"what material this represents (e.g., concrete, wood, metal, fabric, stone)\",\n  \"quality\": \"low, medium, high, production\",\n  \"tileable\": true/false,\n  \"resolution\": \"estimated resolution like 1024x1024, 2048x2048, 4096x4096\",\n  \"suggestedTags\": [\"array of relevant tags\"],\n  \"suggestedFolder\": \"recommended folder structure like Materials/Environment/Stone\",\n  \"pbr_ready\": true/false,\n  \"description\": \"brief description of the texture\"\n}`;\n} else if (metadata.assetType === '3d_model') {\n  prompt = `Analyze this 3D model filename and categorize it for a game project.\n\nFilename: ${metadata.fileNameWithoutExt}\nFormat: ${metadata.fileExt}\nSize: ${metadata.fileSizeMB} MB\n\nProvide response in this JSON format:\n{\n  \"category\": \"one of: character, prop, environment, weapon, vehicle, architecture, vegetation\",\n  \"subcategory\": \"more specific classification\",\n  \"polyCount\": \"estimated: low_poly, mid_poly, high_poly, or hero based on file size\",\n  \"suggestedTags\": [\"array of relevant tags\"],\n  \"suggestedFolder\": \"recommended folder structure\",\n  \"needsOptimization\": true/false with reasoning,\n  \"description\": \"brief description\"\n}`;\n}\n\nreturn {\n  metadata,\n  prompt,\n  hasImage: metadata.assetType === 'texture'\n};"
+      },
+      "name": "Build AI Analysis Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 250],
+      "notes": "Create appropriate prompt for asset type"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{ `Bearer ${$credentials.apiKey}` }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParametersJson": "={{ JSON.stringify({\n  model: $json.hasImage ? 'gpt-4o-mini' : 'gpt-4o-mini',\n  max_tokens: 500,\n  messages: [\n    {\n      role: 'user',\n      content: $json.hasImage ? [\n        {\n          type: 'text',\n          text: $json.prompt\n        },\n        {\n          type: 'image_url',\n          image_url: {\n            url: `data:image/jpeg;base64,${$binary.data.data.toString('base64')}`\n          }\n        }\n      ] : $json.prompt\n    }\n  ]\n}) }}"
+      },
+      "name": "Call OpenAI Vision API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1250, 250],
+      "notes": "Use GPT-4 Vision for texture analysis or GPT-4 for model analysis"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI response\nconst aiResponse = $input.item(0).json;\nconst metadata = $input.item(0).json.metadata;\n\nconst analysisText = aiResponse.choices[0].message.content;\nconst analysis = JSON.parse(analysisText);\n\n// Combine metadata and AI analysis\nconst assetData = {\n  ...metadata,\n  ai_analysis: analysis,\n  processing_date: new Date().toISOString(),\n  destination_folder: `/home/user/UnrealProjects/MyGame/Content/${analysis.suggestedFolder}`\n};\n\nreturn assetData;"
+      },
+      "name": "Parse AI Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 250],
+      "notes": "Extract AI categorization results"
+    },
+    {
+      "parameters": {
+        "command": "={{ `mkdir -p '${$json.destination_folder}'` }}"
+      },
+      "name": "Create Destination Folder",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1650, 200],
+      "notes": "Ensure target folder exists"
+    },
+    {
+      "parameters": {
+        "command": "={{ `mv '${$json.filePath}' '${$json.destination_folder}/${$json.fileName}'` }}"
+      },
+      "name": "Move Asset to Folder",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1850, 200],
+      "notes": "Organize asset into proper location"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Create metadata sidecar file\nconst assetData = $input.item(0).json;\n\nconst metadataContent = {\n  asset_name: assetData.fileNameWithoutExt,\n  file_type: assetData.fileExt,\n  file_size_mb: assetData.fileSizeMB,\n  imported_date: assetData.createdAt,\n  processed_date: assetData.processing_date,\n  ai_analysis: assetData.ai_analysis,\n  tags: assetData.ai_analysis.suggestedTags,\n  unreal_engine: {\n    import_ready: true,\n    suggested_settings: assetData.assetType === 'texture' ? {\n      compression: assetData.ai_analysis.category === 'normal' ? 'Normalmap' : 'Default',\n      srgb: assetData.ai_analysis.category === 'albedo',\n      mip_gen_settings: 'FromTextureGroup'\n    } : {}\n  }\n};\n\nconst metadataFilePath = `${assetData.destination_folder}/${assetData.fileNameWithoutExt}_metadata.json`;\n\nreturn {\n  assetData,\n  metadataContent,\n  metadataFilePath\n};"
+      },
+      "name": "Generate Metadata File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2050, 200],
+      "notes": "Create JSON sidecar with AI analysis"
+    },
+    {
+      "parameters": {
+        "command": "={{ `echo '${JSON.stringify($json.metadataContent, null, 2).replace(/'/g, \"'\\\\''\")}' > '${$json.metadataFilePath}'` }}"
+      },
+      "name": "Write Metadata File",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [2250, 200],
+      "notes": "Save metadata JSON"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "YOUR_ASSET_REGISTRY_SHEET_ID",
+        "range": "Assets",
+        "values": "={{ [[\n  $json.assetData.processing_date,\n  $json.assetData.fileName,\n  $json.assetData.assetType,\n  $json.assetData.ai_analysis.category,\n  $json.assetData.ai_analysis.suggestedTags.join(', '),\n  $json.assetData.destination_folder,\n  $json.assetData.fileSizeMB,\n  'Processed'\n]] }}"
+      },
+      "name": "Log to Asset Registry",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [2250, 350],
+      "notes": "Track all processed assets"
+    },
+    {
+      "parameters": {
+        "channel": "#ue5-assets",
+        "text": "={{ `📦 **New Asset Processed**\\n\\n` +\n               `**Name:** ${$json.assetData.fileName}\\n` +\n               `**Type:** ${$json.assetData.assetType}\\n` +\n               `**Category:** ${$json.assetData.ai_analysis.category}\\n` +\n               `**Quality:** ${$json.assetData.ai_analysis.quality || $json.assetData.ai_analysis.polyCount}\\n` +\n               `**Tags:** ${$json.assetData.ai_analysis.suggestedTags.join(', ')}\\n` +\n               `**Location:** \\`${$json.assetData.destination_folder}\\`\\n\\n` +\n               `**Description:** ${$json.assetData.ai_analysis.description}` }}"
+      },
+      "name": "Notify Team",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [2250, 500],
+      "notes": "Post to team channel"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.assetData.ai_analysis.needsOptimization }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Check if Needs Optimization",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [2050, 450],
+      "notes": "Flag assets that need work"
+    },
+    {
+      "parameters": {
+        "channel": "#ue5-assets",
+        "text": "={{ `⚠️ **Asset Needs Optimization**\\n\\n` +\n               `**File:** ${$json.assetData.fileName}\\n` +\n               `**Size:** ${$json.assetData.fileSizeMB} MB\\n` +\n               `**Reason:** ${$json.assetData.ai_analysis.needsOptimization}\\n\\n` +\n               `_Please review before importing to UE5_` }}",
+        "otherOptions": {
+          "priority": "high"
+        }
+      },
+      "name": "Alert Optimization Needed",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2,
+      "position": [2250, 650],
+      "notes": "Warn team about problematic assets"
+    }
+  ],
+  "connections": {
+    "Watch Asset Folder": {
+      "main": [
+        [{"node": "Filter Asset Types", "type": "main", "index": 0}]
+      ]
+    },
+    "Filter Asset Types": {
+      "main": [
+        [{"node": "Extract File Metadata", "type": "main", "index": 0}]
+      ]
+    },
+    "Extract File Metadata": {
+      "main": [
+        [
+          {"node": "Read File as Binary", "type": "main", "index": 0},
+          {"node": "Build AI Analysis Prompt", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Read File as Binary": {
+      "main": [
+        [{"node": "Build AI Analysis Prompt", "type": "main", "index": 0}]
+      ]
+    },
+    "Build AI Analysis Prompt": {
+      "main": [
+        [{"node": "Call OpenAI Vision API", "type": "main", "index": 0}]
+      ]
+    },
+    "Call OpenAI Vision API": {
+      "main": [
+        [{"node": "Parse AI Analysis", "type": "main", "index": 0}]
+      ]
+    },
+    "Parse AI Analysis": {
+      "main": [
+        [
+          {"node": "Create Destination Folder", "type": "main", "index": 0},
+          {"node": "Check if Needs Optimization", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Create Destination Folder": {
+      "main": [
+        [{"node": "Move Asset to Folder", "type": "main", "index": 0}]
+      ]
+    },
+    "Move Asset to Folder": {
+      "main": [
+        [{"node": "Generate Metadata File", "type": "main", "index": 0}]
+      ]
+    },
+    "Generate Metadata File": {
+      "main": [
+        [
+          {"node": "Write Metadata File", "type": "main", "index": 0},
+          {"node": "Log to Asset Registry", "type": "main", "index": 0},
+          {"node": "Notify Team", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Check if Needs Optimization": {
+      "main": [
+        [{"node": "Alert Optimization Needed", "type": "main", "index": 0}]
+      ]
+    }
+  },
+  "meta": {
+    "description": "**AI Asset Tagger and Organizer**\n\n**Use Case:** Automatically analyze, categorize, and organize game assets (textures, 3D models) dropped into a processing folder using AI vision/analysis. Extracts metadata, suggests folder structure, tags for UE5 import, and flags optimization issues.\n\n**How to Run:**\n\n1. **Import workflow** into n8n\n\n2. **Configure credentials:**\n   - OpenAI API key (GPT-4o-mini with vision)\n   - Google Sheets API (for asset registry)\n   - Slack webhook (for team notifications)\n\n3. **Setup folder structure:**\n   ```\n   /UnrealProjects/MyGame/\n     Content/\n       ToProcess/        # Drop assets here\n       Materials/\n       StaticMeshes/\n       Textures/\n       ...\n   ```\n\n4. **Update configuration:**\n   - Watch folder path\n   - Asset registry Google Sheet ID\n   - Slack channel for notifications\n\n5. **Activate workflow** - it monitors the folder continuously\n\n6. **Test:** Drop a texture or 3D model into `/Content/ToProcess/`\n\n**Expected Output:**\n\n**Example 1: Texture File**\n- Drop: `concrete_wall_albedo_4k.png` into `/ToProcess/`\n- AI Analysis:\n  ```json\n  {\n    \"category\": \"albedo\",\n    \"materialType\": \"concrete\",\n    \"quality\": \"high\",\n    \"tileable\": true,\n    \"resolution\": \"4096x4096\",\n    \"suggestedTags\": [\"concrete\", \"wall\", \"pbr\", \"architectural\"],\n    \"suggestedFolder\": \"Materials/Environment/Concrete\",\n    \"pbr_ready\": true,\n    \"description\": \"High-quality tileable concrete wall albedo texture\"\n  }\n  ```\n- Actions:\n  - Moved to `/Content/Materials/Environment/Concrete/`\n  - Metadata JSON created with UE5 import settings\n  - Logged to asset registry spreadsheet\n  - Posted to #ue5-assets Slack channel\n\n**Example 2: 3D Model**\n- Drop: `medieval_sword_hero.fbx` (85 MB) into `/ToProcess/`\n- AI Analysis:\n  ```json\n  {\n    \"category\": \"weapon\",\n    \"subcategory\": \"melee/sword\",\n    \"polyCount\": \"high_poly\",\n    \"suggestedTags\": [\"weapon\", \"sword\", \"medieval\", \"hero\"],\n    \"suggestedFolder\": \"StaticMeshes/Weapons/Melee\",\n    \"needsOptimization\": true,\n    \"description\": \"Hero-quality medieval sword model\"\n  }\n  ```\n- Actions:\n  - Moved to `/Content/StaticMeshes/Weapons/Melee/`\n  - Metadata created\n  - **Optimization warning sent** (file size suggests high poly count)\n\n**Metadata Sidecar Example:**\n`concrete_wall_albedo_4k_metadata.json`:\n```json\n{\n  \"asset_name\": \"concrete_wall_albedo_4k\",\n  \"file_type\": \"png\",\n  \"file_size_mb\": \"42.5\",\n  \"imported_date\": \"2025-01-15T10:30:00Z\",\n  \"processed_date\": \"2025-01-15T10:30:15Z\",\n  \"ai_analysis\": { /* full analysis */ },\n  \"tags\": [\"concrete\", \"wall\", \"pbr\", \"architectural\"],\n  \"unreal_engine\": {\n    \"import_ready\": true,\n    \"suggested_settings\": {\n      \"compression\": \"Default\",\n      \"srgb\": true,\n      \"mip_gen_settings\": \"FromTextureGroup\"\n    }\n  }\n}\n```\n\n**Tier Classification:**\n\nThis is **Tier 2** because:\n\n1. **Context-aware AI analysis:** Uses vision AI to understand texture content, not just filename patterns\n2. **Semantic categorization:** Determines material type (concrete vs wood) from visual analysis\n3. **Quality assessment:** AI judges texture quality, tileability, PBR-readiness from image content\n4. **Intelligent routing:** Suggests folder structure based on semantic understanding\n5. **n8n orchestration:** Workflow handles file operations, AI provides intelligence\n6. **Single LLM interaction:** One API call per asset for analysis\n7. **No autonomous decision chains:** Once AI responds, actions are deterministic\n\nThis differs from **Tier 1** (which would organize by filename patterns only) by using visual/semantic analysis. It differs from **Tier 3** (agent) by not having autonomous multi-step reasoning or tool use - AI analyzes once, n8n executes fixed workflow.\n\n**Cost Optimization:**\n- GPT-4o-mini vision: ~$0.01 per texture analysis\n- GPT-4o-mini text: ~$0.0003 per model filename analysis\n- Typical cost: ~$5 per 500 assets processed\n\n**Future Enhancements** (would push to Tier 3/4):\n- Auto-generate LODs for high-poly models\n- Create material instances in UE5 via Python API\n- Suggest optimal compression settings per texture\n- Batch process related textures into material sets"
+  },
+  "tags": [
+    {"name": "ue5"},
+    {"name": "assets"},
+    {"name": "ai-tagging"},
+    {"name": "openai"},
+    {"name": "tier-2"}
+  ]
+}

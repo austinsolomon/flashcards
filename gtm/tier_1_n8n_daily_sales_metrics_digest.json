@@ -1,0 +1,220 @@
+{
+  "name": "Daily Sales Metrics Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1-5"
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "notes": "Runs every weekday at 8:00 AM"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.hubspot.com/crm/v3/objects/deals",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotApi",
+        "options": {
+          "qs": {
+            "limit": 100,
+            "properties": "amount,dealstage,closedate,createdate",
+            "filterGroups": "[{\"filters\":[{\"propertyName\":\"createdate\",\"operator\":\"GTE\",\"value\":\"{{ $now.minus({days: 1}).toISO() }}\"}]}]"
+          }
+        }
+      },
+      "name": "Get Yesterday's Deals",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300],
+      "notes": "Fetch all deals created in last 24 hours"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.hubspot.com/crm/v3/objects/contacts",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotApi",
+        "options": {
+          "qs": {
+            "limit": 100,
+            "properties": "email,lifecyclestage,hs_lead_status",
+            "filterGroups": "[{\"filters\":[{\"propertyName\":\"createdate\",\"operator\":\"GTE\",\"value\":\"{{ $now.minus({days: 1}).toISO() }}\"}]}]"
+          }
+        }
+      },
+      "name": "Get Yesterday's Leads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 450],
+      "notes": "Fetch all new leads from last 24 hours"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.hubspot.com/crm/v3/objects/deals",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "hubspotApi",
+        "options": {
+          "qs": {
+            "limit": 100,
+            "properties": "amount,dealstage,closedate",
+            "filterGroups": "[{\"filters\":[{\"propertyName\":\"dealstage\",\"operator\":\"EQ\",\"value\":\"closedwon\"},{\"propertyName\":\"closedate\",\"operator\":\"GTE\",\"value\":\"{{ $now.minus({days: 1}).toISO() }}\"}]}]"
+          }
+        }
+      },
+      "name": "Get Yesterday's Closed Deals",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 600],
+      "notes": "Fetch deals closed yesterday"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process deals data\nconst dealsData = $input.item(0).json.results || [];\n\nconst totalDeals = dealsData.length;\nconst totalValue = dealsData.reduce((sum, deal) => sum + (parseFloat(deal.properties.amount) || 0), 0);\nconst avgDealSize = totalDeals > 0 ? totalValue / totalDeals : 0;\n\n// Group by stage\nconst byStage = dealsData.reduce((acc, deal) => {\n  const stage = deal.properties.dealstage;\n  acc[stage] = (acc[stage] || 0) + 1;\n  return acc;\n}, {});\n\nreturn {\n  totalDeals,\n  totalValue,\n  avgDealSize,\n  byStage\n};"
+      },
+      "name": "Calculate Deal Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300],
+      "notes": "Aggregate deal statistics"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process leads data\nconst leadsData = $input.item(0).json.results || [];\n\nconst totalLeads = leadsData.length;\n\n// Group by lifecycle stage\nconst byLifecycle = leadsData.reduce((acc, lead) => {\n  const stage = lead.properties.lifecyclestage || 'unknown';\n  acc[stage] = (acc[stage] || 0) + 1;\n  return acc;\n}, {});\n\n// Group by lead status\nconst byStatus = leadsData.reduce((acc, lead) => {\n  const status = lead.properties.hs_lead_status || 'unqualified';\n  acc[status] = (acc[status] || 0) + 1;\n  return acc;\n}, {});\n\nreturn {\n  totalLeads,\n  byLifecycle,\n  byStatus\n};"
+      },
+      "name": "Calculate Lead Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 450],
+      "notes": "Aggregate lead statistics"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process closed deals\nconst closedData = $input.item(0).json.results || [];\n\nconst totalClosed = closedData.length;\nconst revenue = closedData.reduce((sum, deal) => sum + (parseFloat(deal.properties.amount) || 0), 0);\n\nreturn {\n  totalClosed,\n  revenue\n};"
+      },
+      "name": "Calculate Closed Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 600],
+      "notes": "Calculate revenue and closed count"
+    },
+    {
+      "parameters": {},
+      "name": "Merge All Metrics",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [850, 450],
+      "notes": "Combine all metric calculations"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all metric inputs\nconst dealMetrics = $input.item(0).json;\nconst leadMetrics = $input.item(1).json;\nconst closedMetrics = $input.item(2).json;\n\n// Format as email body\nconst emailBody = `\n<h2>📊 Daily Sales Metrics - ${new Date().toLocaleDateString()}</h2>\n\n<h3>💰 Revenue</h3>\n<ul>\n  <li><strong>Deals Closed:</strong> ${closedMetrics.totalClosed}</li>\n  <li><strong>Revenue Generated:</strong> $${closedMetrics.revenue.toLocaleString()}</li>\n</ul>\n\n<h3>🤝 New Deals</h3>\n<ul>\n  <li><strong>Total New Deals:</strong> ${dealMetrics.totalDeals}</li>\n  <li><strong>Total Pipeline Value:</strong> $${dealMetrics.totalValue.toLocaleString()}</li>\n  <li><strong>Average Deal Size:</strong> $${dealMetrics.avgDealSize.toFixed(2)}</li>\n</ul>\n\n<h4>Breakdown by Stage:</h4>\n<ul>\n${Object.entries(dealMetrics.byStage).map(([stage, count]) => \n  `  <li>${stage}: ${count} deals</li>`\n).join('\\n')}\n</ul>\n\n<h3>👥 New Leads</h3>\n<ul>\n  <li><strong>Total New Leads:</strong> ${leadMetrics.totalLeads}</li>\n</ul>\n\n<h4>Breakdown by Lifecycle:</h4>\n<ul>\n${Object.entries(leadMetrics.byLifecycle).map(([stage, count]) => \n  `  <li>${stage}: ${count} leads</li>`\n).join('\\n')}\n</ul>\n\n<h4>Breakdown by Status:</h4>\n<ul>\n${Object.entries(leadMetrics.byStatus).map(([status, count]) => \n  `  <li>${status}: ${count} leads</li>`\n).join('\\n')}\n</ul>\n\n<hr>\n<p><em>Generated automatically by n8n at ${new Date().toLocaleTimeString()}</em></p>\n`;\n\nreturn {\n  subject: `Daily Sales Digest - ${new Date().toLocaleDateString()}`,\n  body: emailBody,\n  metrics: {\n    deals: dealMetrics,\n    leads: leadMetrics,\n    closed: closedMetrics\n  }\n};"
+      },
+      "name": "Format Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1050, 450],
+      "notes": "Create HTML email body"
+    },
+    {
+      "parameters": {
+        "fromEmail": "sales-metrics@yourcompany.com",
+        "toEmail": "sales-team@yourcompany.com",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "html",
+        "message": "={{ $json.body }}"
+      },
+      "name": "Send Email Digest",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1250, 450],
+      "notes": "Send to sales team"
+    },
+    {
+      "parameters": {
+        "url": "https://hooks.slack.com/services/YOUR/WEBHOOK/URL",
+        "options": {
+          "bodyParametersJson": "={{ JSON.stringify({\n  text: '📊 Daily Sales Digest',\n  blocks: [\n    {\n      type: 'header',\n      text: {\n        type: 'plain_text',\n        text: '📊 Daily Sales Metrics'\n      }\n    },\n    {\n      type: 'section',\n      fields: [\n        {\n          type: 'mrkdwn',\n          text: `*💰 Deals Closed:*\\n${$json.metrics.closed.totalClosed}`\n        },\n        {\n          type: 'mrkdwn',\n          text: `*Revenue:*\\n$${$json.metrics.closed.revenue.toLocaleString()}`\n        },\n        {\n          type: 'mrkdwn',\n          text: `*🤝 New Deals:*\\n${$json.metrics.deals.totalDeals}`\n        },\n        {\n          type: 'mrkdwn',\n          text: `*👥 New Leads:*\\n${$json.metrics.leads.totalLeads}`\n        }\n      ]\n    },\n    {\n      type: 'context',\n      elements: [\n        {\n          type: 'mrkdwn',\n          text: `Generated at ${new Date().toLocaleTimeString()}`\n        }\n      ]\n    }\n  ]\n}) }}"
+        }
+      },
+      "name": "Post to Slack",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1250, 600],
+      "notes": "Optional: Also post to Slack #sales channel"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {"node": "Get Yesterday's Deals", "type": "main", "index": 0},
+          {"node": "Get Yesterday's Leads", "type": "main", "index": 0},
+          {"node": "Get Yesterday's Closed Deals", "type": "main", "index": 0}
+        ]
+      ]
+    },
+    "Get Yesterday's Deals": {
+      "main": [
+        [{"node": "Calculate Deal Metrics", "type": "main", "index": 0}]
+      ]
+    },
+    "Get Yesterday's Leads": {
+      "main": [
+        [{"node": "Calculate Lead Metrics", "type": "main", "index": 0}]
+      ]
+    },
+    "Get Yesterday's Closed Deals": {
+      "main": [
+        [{"node": "Calculate Closed Metrics", "type": "main", "index": 0}]
+      ]
+    },
+    "Calculate Deal Metrics": {
+      "main": [
+        [{"node": "Merge All Metrics", "type": "main", "index": 0}]
+      ]
+    },
+    "Calculate Lead Metrics": {
+      "main": [
+        [{"node": "Merge All Metrics", "type": "main", "index": 1}]
+      ]
+    },
+    "Calculate Closed Metrics": {
+      "main": [
+        [{"node": "Merge All Metrics", "type": "main", "index": 2}]
+      ]
+    },
+    "Merge All Metrics": {
+      "main": [
+        [{"node": "Format Email", "type": "main", "index": 0}]
+      ]
+    },
+    "Format Email": {
+      "main": [
+        [
+          {"node": "Send Email Digest", "type": "main", "index": 0},
+          {"node": "Post to Slack", "type": "main", "index": 0}
+        ]
+      ]
+    }
+  },
+  "meta": {
+    "instanceId": "your-n8n-instance-id"
+  },
+  "tags": [
+    {"name": "sales"},
+    {"name": "metrics"},
+    {"name": "daily-digest"},
+    {"name": "tier-1"}
+  ]
+}
