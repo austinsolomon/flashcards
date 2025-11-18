@@ -1,0 +1,75 @@
+{
+  "name": "Law - Tier 2 - Contract Clause Risk Analyzer",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "/home/user/Contracts/Inbox/",
+        "event": "add"
+      },
+      "name": "Watch Contracts Folder",
+      "type": "n8n-nodes-base.filesTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fileName = $input.first().json.file;\nconst fs = require('fs');\nconst pdfParse = require('pdf-parse');\n\nconst dataBuffer = fs.readFileSync(fileName);\nconst pdfData = await pdfParse(dataBuffer);\n\nreturn [{\n  json: {\n    fileName: fileName.split('/').pop(),\n    contractText: pdfData.text,\n    pageCount: pdfData.numpages\n  }\n}];"
+      },
+      "name": "Extract Contract Text",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "headerAuth",
+        "headerParameters": {
+          "parameters": [
+            {"name": "anthropic-version", "value": "2023-06-01"}
+          ]
+        },
+        "bodyParametersJson": "={\n  \"model\": \"claude-sonnet-4-5-20250929\",\n  \"max_tokens\": 4000,\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"Analyze this contract for risky clauses. Return JSON: {\\\"risks\\\": [{\\\"clause\\\": \\\"...\\\", \\\"category\\\": \\\"...\\\", \\\"severity\\\": \\\"high|medium|low\\\", \\\"issue\\\": \\\"...\\\", \\\"recommendation\\\": \\\"...\\\"}], \\\"overall_risk\\\": \\\"high|medium|low\\\", \\\"summary\\\": \\\"...\\\"}\\n\\nContract:\\n{{ $json.contractText.substring(0, 100000) }}\"\n  }]\n}"
+      },
+      "name": "Claude Contract Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const response = $input.first().json;\nconst analysis = JSON.parse(response.content[0].text);\nconst fileName = $('Extract Contract Text').first().json.fileName;\n\nconst riskEmoji = {'high': '🔴', 'medium': '🟡', 'low': '🟢'};\nlet report = `📄 CONTRACT RISK ANALYSIS\\n\\nContract: ${fileName}\\nOverall Risk: ${riskEmoji[analysis.overall_risk]} ${analysis.overall_risk.toUpperCase()}\\n\\n${analysis.summary}\\n\\n`;\n\nif (analysis.risks.length > 0) {\n  report += `⚠️ RISKS (${analysis.risks.length}):\\n\\n`;\n  analysis.risks.forEach((r, i) => {\n    report += `${i+1}. ${riskEmoji[r.severity]} ${r.category}: ${r.issue}\\n   Recommendation: ${r.recommendation}\\n\\n`;\n  });\n}\n\nreturn [{json: {report, risks: analysis.risks, fileName}}];"
+      },
+      "name": "Generate Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "toEmail": "attorney@lawfirm.com",
+        "subject": "⚠️ Contract Risk Report - {{$json.fileName}}",
+        "text": "={{$json.report}}"
+      },
+      "name": "Send Report Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Watch Contracts Folder": {
+      "main": [[{"node": "Extract Contract Text", "type": "main", "index": 0}]]
+    },
+    "Extract Contract Text": {
+      "main": [[{"node": "Claude Contract Analysis", "type": "main", "index": 0}]]
+    },
+    "Claude Contract Analysis": {
+      "main": [[{"node": "Generate Report", "type": "main", "index": 0}]]
+    },
+    "Generate Report": {
+      "main": [[{"node": "Send Report Email", "type": "main", "index": 0}]]
+    }
+  }
+}

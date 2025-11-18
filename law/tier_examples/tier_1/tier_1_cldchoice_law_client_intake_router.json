@@ -1,0 +1,159 @@
+{
+  "name": "Law - Tier 1 - Client Intake Form Router",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "labelIds": ["UNREAD"],
+          "sender": "noreply@typeform.com"
+        }
+      },
+      "name": "Gmail Trigger - New Intake Form",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "notes": "Monitors for new client intake form submissions from Typeform or Google Forms"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parse intake form email\nconst email = $input.first().json;\nconst body = email.textPlain || email.textHtml || '';\n\n// Extract key fields (simplified - real implementation would parse structured data)\nconst nameMatch = body.match(/Name[:\\s]+([^\\n]+)/);\nconst emailMatch = body.match(/Email[:\\s]+([^\\n@]+@[^\\n@]+)/);\nconst matterMatch = body.match(/Legal Issue[:\\s]+([^\\n]+)/);\nconst urgencyMatch = body.match(/Urgency[:\\s]+([^\\n]+)/);\n\nconst clientName = nameMatch ? nameMatch[1].trim() : 'Unknown Client';\nconst clientEmail = emailMatch ? emailMatch[1].trim() : 'unknown@example.com';\nconst matterType = matterMatch ? matterMatch[1].trim() : 'General';\nconst urgency = urgencyMatch ? urgencyMatch[1].trim().toLowerCase() : 'normal';\n\n// Categorize matter type\nlet category = 'general';\nif (matterType.toLowerCase().includes('family') || matterType.toLowerCase().includes('divorce')) {\n  category = 'family_law';\n} else if (matterType.toLowerCase().includes('business') || matterType.toLowerCase().includes('contract')) {\n  category = 'business_law';\n} else if (matterType.toLowerCase().includes('estate') || matterType.toLowerCase().includes('will')) {\n  category = 'estate_planning';\n} else if (matterType.toLowerCase().includes('injury') || matterType.toLowerCase().includes('accident')) {\n  category = 'personal_injury';\n}\n\nreturn [{\n  json: {\n    clientName: clientName,\n    clientEmail: clientEmail,\n    matterType: matterType,\n    category: category,\n    urgency: urgency,\n    receivedAt: new Date().toISOString(),\n    emailBody: body\n  }\n}];"
+      },
+      "name": "Parse Intake Form",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.category}}",
+              "operation": "equals",
+              "value2": "family_law"
+            }
+          ]
+        }
+      },
+      "name": "Route Family Law",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [650, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.category}}",
+              "operation": "equals",
+              "value2": "business_law"
+            }
+          ]
+        }
+      },
+      "name": "Route Business Law",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.category}}",
+              "operation": "equals",
+              "value2": "estate_planning"
+            }
+          ]
+        }
+      },
+      "name": "Route Estate Planning",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "toEmail": "family.law@lawfirm.com",
+        "subject": "New Family Law Intake - {{$json.clientName}}",
+        "text": "New client intake received:\\n\\nClient: {{$json.clientName}}\\nEmail: {{$json.clientEmail}}\\nMatter: {{$json.matterType}}\\nUrgency: {{$json.urgency}}\\nReceived: {{$json.receivedAt}}\\n\\nPlease review and contact client within 24 hours."
+      },
+      "name": "Email Family Law Attorney",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "toEmail": "business.law@lawfirm.com",
+        "subject": "New Business Law Intake - {{$json.clientName}}",
+        "text": "New client intake received:\\n\\nClient: {{$json.clientName}}\\nEmail: {{$json.clientEmail}}\\nMatter: {{$json.matterType}}\\nUrgency: {{$json.urgency}}\\nReceived: {{$json.receivedAt}}\\n\\nPlease review and contact client within 24 hours."
+      },
+      "name": "Email Business Law Attorney",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "toEmail": "estate@lawfirm.com",
+        "subject": "New Estate Planning Intake - {{$json.clientName}}",
+        "text": "New client intake received:\\n\\nClient: {{$json.clientName}}\\nEmail: {{$json.clientEmail}}\\nMatter: {{$json.matterType}}\\nUrgency: {{$json.urgency}}\\nReceived: {{$json.receivedAt}}\\n\\nPlease review and contact client within 24 hours."
+      },
+      "name": "Email Estate Attorney",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [850, 400]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Create intake file for CRM/practice management\nconst data = $input.first().json;\nconst fs = require('fs');\n\nconst fileName = `intake_${data.clientName.replace(/\\s+/g, '_')}_${Date.now()}.md`;\nconst filePath = `/home/user/LegalNotes/Intakes/${fileName}`;\n\nconst fileContent = `---\nclient_name: ${data.clientName}\nclient_email: ${data.clientEmail}\nmatter_type: ${data.matterType}\ncategory: ${data.category}\nurgency: ${data.urgency}\nreceived_at: ${data.receivedAt}\nstatus: new\n---\n\n# Client Intake - ${data.clientName}\n\n**Received**: ${data.receivedAt}\n**Category**: ${data.category}\n**Urgency**: ${data.urgency}\n\n## Client Information\n- **Name**: ${data.clientName}\n- **Email**: ${data.clientEmail}\n\n## Matter Details\n${data.matterType}\n\n## Next Steps\n- [ ] Attorney review\n- [ ] Schedule initial consultation\n- [ ] Conflicts check\n- [ ] Engagement letter\n\n## Original Submission\n${data.emailBody}\n`;\n\nfs.writeFileSync(filePath, fileContent);\n\nreturn [{ json: { fileName: fileName, filePath: filePath } }];"
+      },
+      "name": "Create Intake File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Gmail Trigger - New Intake Form": {
+      "main": [[{ "node": "Parse Intake Form", "type": "main", "index": 0 }]]
+    },
+    "Parse Intake Form": {
+      "main": [[
+        { "node": "Route Family Law", "type": "main", "index": 0 },
+        { "node": "Route Business Law", "type": "main", "index": 0 },
+        { "node": "Route Estate Planning", "type": "main", "index": 0 }
+      ]]
+    },
+    "Route Family Law": {
+      "main": [[{ "node": "Email Family Law Attorney", "type": "main", "index": 0 }]]
+    },
+    "Route Business Law": {
+      "main": [[{ "node": "Email Business Law Attorney", "type": "main", "index": 0 }]]
+    },
+    "Route Estate Planning": {
+      "main": [[{ "node": "Email Estate Attorney", "type": "main", "index": 0 }]]
+    },
+    "Email Family Law Attorney": {
+      "main": [[{ "node": "Create Intake File", "type": "main", "index": 0 }]]
+    },
+    "Email Business Law Attorney": {
+      "main": [[{ "node": "Create Intake File", "type": "main", "index": 0 }]]
+    },
+    "Email Estate Attorney": {
+      "main": [[{ "node": "Create Intake File", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {},
+  "staticData": null
+}

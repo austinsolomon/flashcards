@@ -1,0 +1,117 @@
+{
+  "name": "Law - Tier 1 - Deadline Router & Daily Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger - Daily 7 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "command": "find /home/user/LegalNotes/Deadlines -name '*.md' -type f"
+      },
+      "name": "Find Deadline Files",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Read each deadline file\nconst files = $input.first().json.stdout.split('\\n').filter(f => f);\nconst fs = require('fs');\nconst results = [];\n\nfor (const filePath of files) {\n  const content = fs.readFileSync(filePath, 'utf8');\n  const fileName = filePath.split('/').pop();\n  results.push({ json: { fileName, filePath, content } });\n}\n\nreturn results;"
+      },
+      "name": "Read File Contents",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parse YAML frontmatter\nconst items = $input.all();\nconst parsed = [];\n\nfor (const item of items) {\n  const content = item.json.content || '';\n  const frontmatterMatch = content.match(/^---\\n([\\s\\S]*?)\\n---/);\n  \n  if (!frontmatterMatch) continue;\n  \n  const frontmatter = frontmatterMatch[1];\n  const metadata = {};\n  \n  frontmatter.split('\\n').forEach(line => {\n    const match = line.match(/^(\\w+):\\s*(.+)$/);\n    if (match) {\n      metadata[match[1]] = match[2];\n    }\n  });\n  \n  const deadlineDate = new Date(metadata.deadline_date);\n  const today = new Date();\n  const daysUntil = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));\n  \n  parsed.push({\n    json: {\n      fileName: item.json.fileName,\n      matter: metadata.matter || 'Unknown',\n      filing: metadata.filing || 'Unknown',\n      deadlineDate: metadata.deadline_date,\n      priority: metadata.priority || 'Normal',\n      status: metadata.status || 'pending',\n      daysUntil: daysUntil\n    }\n  });\n}\n\nreturn parsed;"
+      },
+      "name": "Parse Frontmatter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Filter active deadlines (pending, within 14 days, not past)\nconst deadlines = $input.all();\nconst active = deadlines.filter(d => {\n  return d.json.status === 'pending' &&\n         d.json.daysUntil >= 0 &&\n         d.json.daysUntil <= 14;\n});\n\nreturn active;"
+      },
+      "name": "Filter Active Deadlines",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Sort by priority then date\nconst deadlines = $input.all();\nconst priorityWeight = { 'Critical': 3, 'High': 2, 'Normal': 1 };\n\ndeadlines.sort((a, b) => {\n  const aPriority = priorityWeight[a.json.priority] || 1;\n  const bPriority = priorityWeight[b.json.priority] || 1;\n  \n  if (aPriority !== bPriority) {\n    return bPriority - aPriority;\n  }\n  \n  return a.json.daysUntil - b.json.daysUntil;\n});\n\nreturn deadlines;"
+      },
+      "name": "Sort by Priority & Date",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Generate email digest\nconst deadlines = $input.all();\nconst today = new Date().toLocaleDateString('en-US', {\n  weekday: 'long',\n  year: 'numeric',\n  month: 'long',\n  day: 'numeric'\n});\n\nconst critical = deadlines.filter(d => d.json.priority === 'Critical');\nconst high = deadlines.filter(d => d.json.priority === 'High');\nconst normal = deadlines.filter(d => d.json.priority === 'Normal');\n\nfunction formatDeadlines(list) {\n  return list.map(d => {\n    const daysText = d.json.daysUntil === 0 ? '⚠️ TODAY' :\n                     d.json.daysUntil === 1 ? '⚠️ TOMORROW' :\n                     `in ${d.json.daysUntil} days`;\n    return `  • ${d.json.filing} (${d.json.matter}) - Due ${daysText} (${d.json.deadlineDate})`;\n  }).join('\\n');\n}\n\nlet emailBody = `📅 DEADLINE DIGEST - ${today}\\n\\n`;\nemailBody += `You have ${deadlines.length} upcoming deadline(s) in the next 14 days.\\n\\n`;\n\nif (critical.length > 0) {\n  emailBody += `🚨 CRITICAL PRIORITY (${critical.length}):\\n`;\n  emailBody += formatDeadlines(critical) + '\\n\\n';\n}\n\nif (high.length > 0) {\n  emailBody += `⚠️ HIGH PRIORITY (${high.length}):\\n`;\n  emailBody += formatDeadlines(high) + '\\n\\n';\n}\n\nif (normal.length > 0) {\n  emailBody += `📋 NORMAL PRIORITY (${normal.length}):\\n`;\n  emailBody += formatDeadlines(normal) + '\\n\\n';\n}\n\nif (deadlines.length === 0) {\n  emailBody = `📅 DEADLINE DIGEST - ${today}\\n\\n✅ No upcoming deadlines in the next 14 days. Enjoy your day!`;\n}\n\nemailBody += `\\n---\\nGenerated automatically by n8n Legal Automation`;\n\nreturn [{\n  json: {\n    subject: `📅 Deadline Digest - ${deadlines.length} upcoming`,\n    body: emailBody,\n    to: process.env.ATTORNEY_EMAIL || 'attorney@lawfirm.com'\n  }\n}];"
+      },
+      "name": "Generate Email Digest",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "no-reply@lawfirm.com",
+        "toEmail": "={{$json.to}}",
+        "subject": "={{$json.subject}}",
+        "text": "={{$json.body}}"
+      },
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1650, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger - Daily 7 AM": {
+      "main": [[{ "node": "Find Deadline Files", "type": "main", "index": 0 }]]
+    },
+    "Find Deadline Files": {
+      "main": [[{ "node": "Read File Contents", "type": "main", "index": 0 }]]
+    },
+    "Read File Contents": {
+      "main": [[{ "node": "Parse Frontmatter", "type": "main", "index": 0 }]]
+    },
+    "Parse Frontmatter": {
+      "main": [[{ "node": "Filter Active Deadlines", "type": "main", "index": 0 }]]
+    },
+    "Filter Active Deadlines": {
+      "main": [[{ "node": "Sort by Priority & Date", "type": "main", "index": 0 }]]
+    },
+    "Sort by Priority & Date": {
+      "main": [[{ "node": "Generate Email Digest", "type": "main", "index": 0 }]]
+    },
+    "Generate Email Digest": {
+      "main": [[{ "node": "Send Email", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "tags": [],
+  "pinData": {},
+  "meta": {
+    "instanceId": "law_automation"
+  }
+}
