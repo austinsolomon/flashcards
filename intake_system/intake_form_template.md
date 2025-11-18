@@ -284,6 +284,6 @@ Before submitting, confirm:
 - **Not sure which tier?** Leave "Suggested Tier" blank - the routing system will determine it.
 - **Don't know exact time savings?** Estimate and note "estimated - needs validation"
 - **Missing technical details?** Submit what you know - we'll schedule a follow-up session
-- **Want to see examples?** Check `/core/intake_system/intake_examples/` for filled-out samples
+- **Want to see examples?** Check `/intake_system/intake_examples/` for filled-out samples
 
 **Questions?** Contact: [automation-intake@yourcompany.com] or Slack: [#automation-requests]
