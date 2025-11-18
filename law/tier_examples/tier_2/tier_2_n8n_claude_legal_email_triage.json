@@ -1,0 +1,84 @@
+{
+  "name": "Law - Tier 2 - Legal Inquiry Email Triage",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {"item": [{"mode": "everyMinute"}]},
+        "filters": {"labelIds": ["UNREAD"], "sender": "*"}
+      },
+      "name": "Gmail - New Email",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "headerAuth",
+        "bodyParametersJson": "={\n  \"model\": \"claude-sonnet-4-5-20250929\",\n  \"max_tokens\": 200,\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"Classify this legal inquiry. Respond with ONE: NEW_CLIENT_INTAKE, EXISTING_CLIENT_QUESTION, COURT_NOTICE, OPPOSING_COUNSEL, SPAM, GENERAL_INQUIRY\\n\\nFrom: {{ $json.from }}\\nSubject: {{ $json.subject }}\\nBody: {{ $json.textPlain.substring(0, 500) }}\\n\\nCategory:\"\n  }]\n}"
+      },
+      "name": "Claude - Classify Intent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const claudeResponse = $input.first().json;\nconst intent = claudeResponse.content[0].text.trim();\nconst emailData = $('Gmail - New Email').first().json;\n\nconst validIntents = ['NEW_CLIENT_INTAKE', 'EXISTING_CLIENT_QUESTION', 'COURT_NOTICE', 'OPPOSING_COUNSEL', 'SPAM', 'GENERAL_INQUIRY'];\nconst classifiedIntent = validIntents.find(i => intent.includes(i)) || 'GENERAL_INQUIRY';\n\nreturn [{json: {...emailData, intent: classifiedIntent}}];"
+      },
+      "name": "Parse Intent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {"string": [{"value1": "={{$json.intent}}", "value2": "COURT_NOTICE"}]}
+      },
+      "name": "Route by Intent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "toEmail": "litigation@lawfirm.com",
+        "subject": "🚨 URGENT - Court Notice Received",
+        "text": "Court notice detected\\n\\nFrom: {{$json.from}}\\nSubject: {{$json.subject}}\\n\\nReview immediately for deadlines."
+      },
+      "name": "Alert - Court Notice",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "toEmail": "intake@lawfirm.com",
+        "subject": "New Client Inquiry",
+        "text": "From: {{$json.from}}\\nSubject: {{$json.subject}}"
+      },
+      "name": "Route - New Client",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1050, 400]
+    }
+  ],
+  "connections": {
+    "Gmail - New Email": {
+      "main": [[{"node": "Claude - Classify Intent", "type": "main", "index": 0}]]
+    },
+    "Claude - Classify Intent": {
+      "main": [[{"node": "Parse Intent", "type": "main", "index": 0}]]
+    },
+    "Parse Intent": {
+      "main": [[{"node": "Route by Intent", "type": "main", "index": 0}]]
+    },
+    "Route by Intent": {
+      "main": [
+        [{"node": "Alert - Court Notice", "type": "main", "index": 0}],
+        [{"node": "Route - New Client", "type": "main", "index": 0}]
+      ]
+    }
+  }
+}

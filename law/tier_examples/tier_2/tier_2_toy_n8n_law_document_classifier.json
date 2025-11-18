@@ -1,0 +1,56 @@
+{
+  "name": "Law - Tier 2 - Legal Document Type Classifier",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "/home/user/LegalDocs/Inbox/",
+        "event": "add"
+      },
+      "name": "Watch Documents Folder",
+      "type": "n8n-nodes-base.filesTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const fileName = $input.first().json.file;\nconst fs = require('fs');\nconst content = fs.readFileSync(fileName, 'utf8');\nreturn [{json: {fileName: fileName.split('/').pop(), content: content.substring(0, 5000)}}];"
+      },
+      "name": "Read Document",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "headerAuth",
+        "bodyParametersJson": "={\n  \"model\": \"claude-sonnet-4-5-20250929\",\n  \"max_tokens\": 100,\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": \"Classify this legal document. Respond with ONE: MOTION, COMPLAINT, ANSWER, DISCOVERY_REQUEST, DISCOVERY_RESPONSE, BRIEF, CONTRACT, SETTLEMENT_AGREEMENT, COURT_ORDER, CORRESPONDENCE, OTHER\\n\\nDocument:\\n{{ $json.content }}\\n\\nType:\"\n  }]\n}"
+      },
+      "name": "Claude - Classify Document",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const response = $input.first().json;\nconst docType = response.content[0].text.trim();\nconst fileName = $('Read Document').first().json.fileName;\n\nconst folderMap = {\n  'MOTION': 'Motions',\n  'COMPLAINT': 'Pleadings',\n  'ANSWER': 'Pleadings',\n  'DISCOVERY_REQUEST': 'Discovery',\n  'DISCOVERY_RESPONSE': 'Discovery',\n  'BRIEF': 'Briefs',\n  'CONTRACT': 'Contracts',\n  'SETTLEMENT_AGREEMENT': 'Settlements',\n  'COURT_ORDER': 'Orders',\n  'CORRESPONDENCE': 'Correspondence',\n  'OTHER': 'Uncategorized'\n};\n\nconst targetFolder = folderMap[docType] || 'Uncategorized';\n\nconst fs = require('fs');\nconst oldPath = `/home/user/LegalDocs/Inbox/${fileName}`;\nconst newPath = `/home/user/LegalDocs/${targetFolder}/${fileName}`;\nfs.renameSync(oldPath, newPath);\n\nreturn [{json: {fileName, docType, targetFolder, moved: true}}];"
+      },
+      "name": "File to Appropriate Folder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Watch Documents Folder": {
+      "main": [[{"node": "Read Document", "type": "main", "index": 0}]]
+    },
+    "Read Document": {
+      "main": [[{"node": "Claude - Classify Document", "type": "main", "index": 0}]]
+    },
+    "Claude - Classify Document": {
+      "main": [[{"node": "File to Appropriate Folder", "type": "main", "index": 0}]]
+    }
+  }
+}
