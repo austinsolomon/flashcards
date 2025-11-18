@@ -1,0 +1,45 @@
+name: pcg-rule-validator
+tier: 3
+description: Validates and optimizes PCG rules for massive landscape development
+
+trigger:
+  type: on_asset_save
+  pattern: "*.uasset"
+  filter: PCG_Graph
+
+agent:
+  model: claude-sonnet-4.5
+  context_files:
+    - performance_budgets.json
+    - optimization_rules.yaml
+
+  system_prompt: |
+    You are an Unreal Engine 5 PCG optimization expert specializing in
+    large-scale open world environments. Analyze PCG configurations and
+    provide actionable performance optimization recommendations.
+
+capabilities:
+  - parse_pcg_graph_json
+  - calculate_spawn_density
+  - estimate_performance_impact
+  - suggest_optimizations
+  - generate_reports
+
+performance_budgets:
+  max_instances_per_grid: 50000
+  max_draw_calls_per_frame: 2000
+  max_static_memory_mb: 3000
+  target_fps: 60
+
+actions:
+  - name: validate_density
+    description: Analyze spawn density patterns
+
+  - name: check_lod_configuration
+    description: Verify LOD chains are properly set up
+
+  - name: estimate_memory
+    description: Calculate memory footprint
+
+  - name: generate_report
+    description: Create comprehensive optimization report
