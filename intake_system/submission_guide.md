@@ -523,7 +523,7 @@ Use this before submitting:
 
 ## Example: Complete Filled-Out Form
 
-See `/core/intake_system/intake_examples/bdr_lead_intelligence_example.md` for a fully completed intake form based on the BDR lead intelligence workflow.
+See `/intake_system/intake_examples/bdr_lead_intelligence_example.md` for a fully completed intake form based on the BDR lead intelligence workflow.
 
 ---
 
@@ -531,7 +531,7 @@ See `/core/intake_system/intake_examples/bdr_lead_intelligence_example.md` for a
 
 **Before Submitting:**
 - Review this guide thoroughly
-- Check example submissions in `/core/intake_system/intake_examples/`
+- Check example submissions in `/intake_system/intake_examples/`
 - Validate time estimates with your team
 - Confirm all integrations/tools with IT/systems team
 
