@@ -1,0 +1,169 @@
+# Digital Safety Compliance Standards Configuration
+# Used by the iPhone Compliance Agent to evaluate apps
+
+standards:
+  ieee_7010:
+    name: "IEEE 7010-2020 - Recommended Practice for Assessing the Impact of Autonomous and Intelligent Systems on Human Well-being"
+    categories:
+      transparency:
+        - "App clearly discloses data collection practices"
+        - "Privacy policy is accessible and understandable"
+        - "User consent is explicit and informed"
+      agency:
+        - "Users can easily opt-out of features"
+        - "Users maintain control over their data"
+        - "Default settings favor user privacy"
+      accountability:
+        - "Clear accountability mechanisms for harm"
+        - "Contact information for complaints is visible"
+        - "Data breach notification procedures exist"
+
+  dsa_article_28:
+    name: "Digital Services Act - Article 28: Protection of minors online"
+    categories:
+      age_verification:
+        - "Appropriate age verification mechanisms in place"
+        - "Age-restricted content is properly gated"
+        - "Default settings for minors are privacy-protective"
+      protection_mechanisms:
+        - "No targeting of minors with ads based on profiling"
+        - "Restricted use of dark patterns affecting minors"
+        - "Parental controls are available and effective"
+      content_moderation:
+        - "Harmful content is filtered for minor accounts"
+        - "Reporting mechanisms for inappropriate content"
+        - "Swift response to flagged content"
+
+  aed_guidelines:
+    name: "Attention Economy Design Guidelines"
+    categories:
+      time_management:
+        - "App provides usage statistics and time tracking"
+        - "Break reminders or usage limits available"
+        - "No infinite scroll without user control"
+      notification_ethics:
+        - "Notifications can be easily customized or disabled"
+        - "No fake urgency indicators (red dots, badges)"
+        - "Notification frequency is reasonable"
+      engagement_tactics:
+        - "No streak mechanics that create obligation"
+        - "No variable reward schedules designed for addiction"
+        - "No social pressure tactics (e.g., 'X is waiting')"
+
+  ico_age_appropriate_design:
+    name: "ICO Age Appropriate Design Code"
+    categories:
+      best_interests:
+        - "Design decisions prioritize child's best interests"
+        - "No detrimental data use for children"
+        - "Privacy settings default to high protection"
+      transparency:
+        - "Privacy information is age-appropriate and clear"
+        - "Terms of service understandable by target age"
+        - "Data practices explained in simple language"
+      detrimental_design:
+        - "No nudge techniques encouraging excessive use"
+        - "No design features exploiting inexperience"
+        - "No manipulation of development vulnerabilities"
+      data_minimization:
+        - "Collection limited to necessary data only"
+        - "Sharing with third parties is minimized"
+        - "Retention periods are appropriate"
+
+dark_patterns:
+  categories:
+    obstruction:
+      - name: "Forced Action"
+        description: "Requiring unnecessary actions to accomplish a task"
+        severity: "high"
+      - name: "Hard to Cancel"
+        description: "Making cancellation difficult or hidden"
+        severity: "critical"
+    sneaking:
+      - name: "Hidden Costs"
+        description: "Revealing costs late in the process"
+        severity: "high"
+      - name: "Bait and Switch"
+        description: "Claiming one outcome but delivering another"
+        severity: "critical"
+    urgency:
+      - name: "Countdown Timers"
+        description: "Fake scarcity or time pressure"
+        severity: "medium"
+      - name: "Limited Availability"
+        description: "False claims of limited stock/time"
+        severity: "medium"
+    social_proof:
+      - name: "Activity Notifications"
+        description: "Fake or misleading activity messages"
+        severity: "medium"
+      - name: "FOMO Triggers"
+        description: "Creating fear of missing out"
+        severity: "high"
+    misdirection:
+      - name: "Visual Interference"
+        description: "Visual design directs to unwanted action"
+        severity: "medium"
+      - name: "Trick Questions"
+        description: "Confusing wording to get unintended answer"
+        severity: "high"
+
+popular_test_apps:
+  - name: "Instagram"
+    bundle_id: "com.burbn.instagram"
+    category: "Social Media"
+    known_concerns:
+      - "Infinite scroll"
+      - "Like counts (engagement metrics)"
+      - "Stories disappearing (FOMO)"
+      - "Activity status"
+
+  - name: "TikTok"
+    bundle_id: "com.zhiliaoapp.musically"
+    category: "Social Media"
+    known_concerns:
+      - "Highly optimized recommendation algorithm"
+      - "Infinite scroll"
+      - "Variable reward schedule"
+      - "Screen time features (minimal)"
+
+  - name: "Candy Crush"
+    bundle_id: "com.king.candycrushsaga"
+    category: "Gaming"
+    known_concerns:
+      - "Lives system (time pressure)"
+      - "In-app purchases with timers"
+      - "Social pressure (help friends)"
+      - "Daily rewards (streak mechanics)"
+
+  - name: "DoorDash"
+    bundle_id: "com.dd.doordash"
+    category: "Food Delivery"
+    known_concerns:
+      - "Surge pricing"
+      - "Limited time offers"
+      - "Subscription prompts"
+      - "Tip defaults"
+
+  - name: "Robinhood"
+    bundle_id: "com.robinhood.release.Robinhood"
+    category: "Finance"
+    known_concerns:
+      - "Confetti on trades (gamification)"
+      - "Push notifications for market moves"
+      - "Simplified risk presentation"
+      - "Social trading features"
+
+evaluation_rubric:
+  scoring:
+    compliant: 100
+    mostly_compliant: 75
+    partially_compliant: 50
+    non_compliant: 25
+    critically_non_compliant: 0
+
+  severity_weights:
+    critical: 1.0
+    high: 0.75
+    medium: 0.5
+    low: 0.25

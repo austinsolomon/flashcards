@@ -1,0 +1,79 @@
+# iPhone Compliance Agent - Git Ignore
+
+# Environment and secrets
+.env
+*.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Generated Reports (may contain sensitive client data)
+reports/*.md
+reports/*.pdf
+reports/*.html
+!reports/.gitkeep
+
+# Screenshots (may contain sensitive app data)
+reports/screenshots/*.png
+reports/screenshots/*.jpg
+!reports/screenshots/.gitkeep
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Logs
+*.log
+logs/
+
+# Appium
+appium.log
+appium-*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
