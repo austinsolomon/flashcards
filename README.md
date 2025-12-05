@@ -1,29 +1,5 @@
 # Generalized Automation Architecture: "The Agentic Workforce"
 
-## 🚀 Quick Start
-
-```bash
-# Clone the repository
-git clone https://github.com/austinsolomon/automation_architecture.git
-cd automation_architecture
-
-# Run automated setup (installs Python, Node.js, n8n, LangChain, and all dependencies)
-./setup.sh  # macOS/Linux
-# or
-.\setup.ps1  # Windows PowerShell
-
-# Configure API keys (minimum: ANTHROPIC_API_KEY for AI examples)
-nano .env
-```
-
-**That's it!** You're ready to run any of the 57 automation examples.
-
-👉 **See [QUICKSTART.md](QUICKSTART.md) for the fastest path to your first working automation (5 minutes to 1 hour).**
-
-👉 **See [EXAMPLES_SUMMARY.md](EXAMPLES_SUMMARY.md) for complete inventory of all examples.**
-
----
-
 ## Architecture Overview
 
 This is a **tiered automation hierarchy** with Claude Code as the orchestration brain, managing complexity levels from simple deterministic shortcuts to fully autonomous multi-agent systems.
