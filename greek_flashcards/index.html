@@ -46,12 +46,17 @@
   </main>
 
   <nav class="controls">
-    <button id="prevBtn" type="button" aria-label="Previous">‹ Prev</button>
-    <button id="shuffleBtn" type="button" aria-label="Shuffle">Shuffle</button>
-    <select id="categoryFilter" aria-label="Filter by category">
-      <option value="">All categories</option>
-    </select>
-    <button id="nextBtn" type="button" aria-label="Next">Next ›</button>
+    <div class="thumb-zone">
+      <button id="prevBtn" type="button" aria-label="Previous">‹ Prev</button>
+      <button id="bottomRevealBtn" type="button" aria-label="Reveal answer" class="reveal-bottom">Reveal</button>
+      <button id="nextBtn" type="button" aria-label="Next">Next ›</button>
+    </div>
+    <div class="secondary-controls">
+      <button id="shuffleBtn" type="button" aria-label="Shuffle">↻ Shuffle</button>
+      <select id="categoryFilter" aria-label="Filter by category">
+        <option value="">All categories</option>
+      </select>
+    </div>
   </nav>
 
   <script src="app.js"></script>

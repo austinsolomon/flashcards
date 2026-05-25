@@ -197,22 +197,58 @@ body {
 }
 
 .controls {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1.3fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-  padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--card-edge);
   background: var(--bg);
 }
 
-.controls button, .controls select {
+.thumb-zone {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1fr;
+  gap: 8px;
+}
+
+.thumb-zone button {
   background: var(--card);
   color: var(--text);
   border: 1px solid var(--card-edge);
-  border-radius: 12px;
-  padding: 12px 6px;
-  font-size: 14px;
-  min-height: 48px;
+  border-radius: 14px;
+  padding: 16px 8px;
+  font-size: 16px;
+  font-weight: 600;
+  min-height: 60px;
 }
 
-.controls button:active { background: #1d2540; }
+.thumb-zone button:active { background: #1d2540; transform: scale(0.97); }
+
+.reveal-bottom {
+  background: rgba(124,196,255,0.15) !important;
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+.reveal-bottom.revealed {
+  background: rgba(155,240,193,0.15) !important;
+  color: var(--answer) !important;
+  border-color: var(--answer) !important;
+}
+
+.secondary-controls {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 8px;
+}
+
+.secondary-controls button, .secondary-controls select {
+  background: var(--card);
+  color: var(--muted);
+  border: 1px solid var(--card-edge);
+  border-radius: 10px;
+  padding: 8px 6px;
+  font-size: 13px;
+  min-height: 38px;
+}
+
+.secondary-controls button:active { background: #1d2540; }

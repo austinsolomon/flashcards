@@ -19,6 +19,7 @@ const els = {
   prevBtn: document.getElementById('prevBtn'),
   nextBtn: document.getElementById('nextBtn'),
   shuffleBtn: document.getElementById('shuffleBtn'),
+  bottomRevealBtn: document.getElementById('bottomRevealBtn'),
   categoryFilter: document.getElementById('categoryFilter'),
 };
 
@@ -118,6 +119,8 @@ function reveal() {
   state.revealed = !state.revealed;
   els.answerRow.classList.toggle('hidden', !state.revealed);
   els.revealBtn.textContent = state.revealed ? 'Hide answer' : 'Tap to reveal answer';
+  els.bottomRevealBtn.textContent = state.revealed ? 'Hide' : 'Reveal';
+  els.bottomRevealBtn.classList.toggle('revealed', state.revealed);
 }
 
 function next() { if (state.filtered.length) { state.index = (state.index + 1) % state.filtered.length; render(); } }
@@ -194,6 +197,7 @@ async function load() {
 
 els.revealBtn.addEventListener('click', reveal);
 els.prompt.addEventListener('click', reveal);
+els.bottomRevealBtn.addEventListener('click', reveal);
 els.nextBtn.addEventListener('click', next);
 els.prevBtn.addEventListener('click', prev);
 els.shuffleBtn.addEventListener('click', shuffle);
