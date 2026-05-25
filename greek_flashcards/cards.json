@@ -1,0 +1,20 @@
+{
+  "deck": "Greek Flashcards",
+  "language": "el",
+  "cards": [
+    {
+      "id": "verbs-001",
+      "concept": "verb conjugation",
+      "example": [
+        "I wait.",
+        "Use in a sentence."
+      ],
+      "answer": [
+        "perimeno",
+        "Nai, se perimeno etho."
+      ],
+      "notes": "Present tense, 1st person singular. Greek: περιμένω. Sentence: Ναι, σε περιμένω εδώ. (Yes, I'm waiting for you here.)",
+      "tags": ["verbs", "present-tense"]
+    }
+  ]
+}
