@@ -5,7 +5,7 @@
     {
       "id": "verb_conjugations",
       "label": "Verb Conjugations",
-      "subcategories": ["present-tense", "past-simple", "past-continuous"]
+      "subcategories": ["present-tense", "past-simple", "past-continuous", "future-tense"]
     },
     {
       "id": "noun_declension",
@@ -16,6 +16,16 @@
       "id": "conversational_vocab",
       "label": "Conversational Vocab",
       "subcategories": []
+    },
+    {
+      "id": "function_words",
+      "label": "Function Words",
+      "subcategories": []
+    },
+    {
+      "id": "alphabet",
+      "label": "Alphabet",
+      "subcategories": []
     }
   ],
   "cards": [
@@ -24,15 +34,9 @@
       "category": "verb_conjugations",
       "subcategories": ["present-tense"],
       "concept": "Verb — Sentence Use",
-      "en": [
-        "I wait.",
-        "Use 'wait' in a sentence."
-      ],
-      "gr": [
-        "perimeno",
-        "Nai, se perimeno edo."
-      ],
-      "notes": "Present tense, 1st person singular of περιμένω (perimeno = to wait). Full sentence: Ναι, σε περιμένω εδώ. (Yes, I'm waiting for you here.)",
+      "en": ["I wait.", "Use 'wait' in a sentence."],
+      "gr": ["perimeno", "Nai, se perimeno edo."],
+      "notes": "Present tense, 1st person singular of περιμένω (perimeno = to wait). Sentence: Ναι, σε περιμένω εδώ. (Yes, I'm waiting for you here.)",
       "tags": ["verbs", "present-tense", "sentence-use"]
     },
     {
@@ -40,19 +44,8 @@
       "category": "verb_conjugations",
       "subcategories": ["present-tense"],
       "concept": "Verb — Full Paradigm (present)",
-      "en": [
-        "Conjugate 'to have' in the present tense:",
-        "I / you / he-she / we / you-all / they"
-      ],
-      "gr": [
-        "Verb: εχω (eho) — to have",
-        "1. eho",
-        "2. eheis",
-        "3. ehei",
-        "4. ehoume",
-        "5. ehete",
-        "6. ehoun"
-      ],
+      "en": ["Conjugate 'to have' in the present tense:", "I / you / he-she / we / you-all / they"],
+      "gr": ["Verb: εχω (eho) — to have", "1. eho", "2. eheis", "3. ehei", "4. ehoume", "5. ehete", "6. ehoun"],
       "notes": "έχω, έχεις, έχει, έχουμε, έχετε, έχουν. The verb 'to have' is one of the most common Greek verbs.",
       "tags": ["verbs", "present-tense", "full-paradigm"]
     },
@@ -61,16 +54,8 @@
       "category": "verb_conjugations",
       "subcategories": ["present-tense", "past-simple", "past-continuous"],
       "concept": "Verb — Tense Flip (eat, 1st person sg)",
-      "en": [
-        "I eat.",
-        "I ate.",
-        "I was eating."
-      ],
-      "gr": [
-        "1. troo",
-        "2. efaga",
-        "3. etroga"
-      ],
+      "en": ["I eat.", "I ate.", "I was eating."],
+      "gr": ["1. troo", "2. efaga", "3. etroga"],
       "notes": "τρώω (present), έφαγα (past simple / aorist), έτρωγα (past continuous / imperfect). Notice the stress shifts back in the past tenses.",
       "tags": ["verbs", "tense-flip"]
     },
@@ -79,15 +64,8 @@
       "category": "verb_conjugations",
       "subcategories": ["past-simple"],
       "concept": "Verb — Identify the Form",
-      "en": [
-        "Greek form: 'pigame'",
-        "Give person, number, tense, and meaning."
-      ],
-      "gr": [
-        "1. 1st person plural",
-        "2. Past simple (aorist) of πηγαίνω (to go)",
-        "3. Translation: 'we went'"
-      ],
+      "en": ["Greek form: 'pigame'", "Give person, number, tense, and meaning."],
+      "gr": ["1. 1st person plural", "2. Past simple (aorist) of πηγαίνω (to go)", "3. Translation: 'we went'"],
       "notes": "πάμε = 'we go' (present); πήγαμε = 'we went' (past simple). Stress shifts back in the aorist.",
       "tags": ["verbs", "past-simple", "identify-form"]
     },
@@ -96,32 +74,208 @@
       "category": "verb_conjugations",
       "subcategories": ["past-continuous"],
       "concept": "Verb — Sentence Use (past continuous)",
-      "en": [
-        "I was reading.",
-        "Use in a sentence."
-      ],
-      "gr": [
-        "1. diavaza",
-        "2. Diavaza ena vivlio otan mou tilefonises."
-      ],
+      "en": ["I was reading.", "Use in a sentence."],
+      "gr": ["1. diavaza", "2. Diavaza ena vivlio otan mou tilefonises."],
       "notes": "διάβαζα = 1st sg past continuous of διαβάζω. Sentence: Διάβαζα ένα βιβλίο όταν μου τηλεφώνησες. (I was reading a book when you called me.)",
       "tags": ["verbs", "past-continuous", "sentence-use"]
+    },
+    {
+      "id": "verbs-006",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Paradigm (to be)",
+      "en": ["Conjugate 'to be' singular:", "I am / you are / he-she-it is"],
+      "gr": ["Verb: ειμαι (eimai)", "1. eimai", "2. eisai", "3. einai"],
+      "notes": "είμαι / είσαι / είναι. Greek 'to be' is irregular and medial (ends in -μαι). Plural: είμαστε, είστε, είναι.",
+      "tags": ["verbs", "present-tense", "to-be", "lesson-1"]
+    },
+    {
+      "id": "verbs-007",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Sentence Use + Paradigm (love)",
+      "en": ["I love you.", "Conjugate 'love' present (all 6)."],
+      "gr": ["1. Se agapo.", "2. agapo / agapas / agapa / agapame / agapate / agapoun"],
+      "notes": "Σ' αγαπώ. αγαπώ / αγαπάς / αγαπά / αγαπάμε / αγαπάτε / αγαπούν. Class-2 verb (stress on ending). 'Se' = object pronoun 'you'.",
+      "tags": ["verbs", "present-tense", "sentence-use", "love", "lesson-1"]
+    },
+    {
+      "id": "verbs-008",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Negation Example (have)",
+      "en": ["I don't have it.", "Pattern: den + pronoun + verb"],
+      "gr": ["1. Den to eho.", "2. Order: den + (object pronoun) + verb"],
+      "notes": "Δεν το έχω. 'Den' (δεν) negates a verb. Object pronoun 'to' (το = it) goes between 'den' and the verb.",
+      "tags": ["verbs", "present-tense", "negation", "have", "lesson-1"]
+    },
+    {
+      "id": "verbs-009",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Paradigm (stay / live)",
+      "en": ["Conjugate 'stay/live' present:", "all 6 persons"],
+      "gr": ["Verb: μενω (meno)", "1. meno", "2. menis", "3. meni", "4. menoume", "5. menete", "6. menoun"],
+      "notes": "μένω / μένεις / μένει / μένουμε / μένετε / μένουν. Means 'stay' but also 'live (in a place)'.",
+      "tags": ["verbs", "present-tense", "full-paradigm", "stay", "lesson-1"]
+    },
+    {
+      "id": "verbs-010",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Paradigm (wait)",
+      "en": ["Conjugate 'wait' present (all 6).", "Same root as μένω + περι- prefix."],
+      "gr": ["Verb: περιμενω (perimeno)", "1. perimeno", "2. perimeneis", "3. perimenei", "4. perimenoume", "5. perimenete", "6. perimenoun"],
+      "notes": "περιμένω / περιμένεις / περιμένει / περιμένουμε / περιμένετε / περιμένουν.",
+      "tags": ["verbs", "present-tense", "full-paradigm", "wait", "lesson-1"]
+    },
+    {
+      "id": "verbs-011",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Paradigm (insist)",
+      "en": ["Conjugate 'insist' present (all 6).", "Same pattern as meno / perimeno."],
+      "gr": ["Verb: επιμενω (epimeno)", "1. epimeno", "2. epimeneis", "3. epimenei", "4. epimenoume", "5. epimenete", "6. epimenoun"],
+      "notes": "επιμένω / επιμένεις / επιμένει / επιμένουμε / επιμένετε / επιμένουν. Built from μένω + επι- prefix.",
+      "tags": ["verbs", "present-tense", "full-paradigm", "insist", "lesson-1"]
+    },
+    {
+      "id": "verbs-012",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Sentence Use (do / make)",
+      "en": ["What are you doing right now?", "I make/do it.", "Conjugate 'do' (3 sg)."],
+      "gr": ["1. Ti kanis tora?", "2. To kano.", "3. kano / kanis / kani"],
+      "notes": "Τι κάνεις τώρα; Το κάνω. κάνω / κάνεις / κάνει. Multi-use verb: 'do', 'make', also 'cost' (Poso kanei? = How much does it cost?).",
+      "tags": ["verbs", "present-tense", "sentence-use", "do", "lesson-1"]
+    },
+    {
+      "id": "verbs-013",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Sentence Use (know)",
+      "en": ["You don't know me.", "Conjugate 'know' (3 sg)."],
+      "gr": ["1. Den me xereis.", "2. xero / xereis / xerei"],
+      "notes": "Δεν με ξέρεις. ξέρω / ξέρεις / ξέρει. 'me' (με) = object pronoun 'me'. ξ = 'x' / 'ks' sound.",
+      "tags": ["verbs", "present-tense", "sentence-use", "know", "lesson-1"]
+    },
+    {
+      "id": "verbs-014",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Sentence Use + Paradigm (want)",
+      "en": ["I don't want to know.", "I want you to know.", "I want it.", "Conjugate 'want' (all 6)."],
+      "gr": ["1. Den thelo na xero.", "2. Thelo na xereis.", "3. To thelo.", "4. thelo / theleis / thelei / theloume / thelete / theloun"],
+      "notes": "Δεν θέλω να ξέρω. Θέλω να ξέρεις. Το θέλω. θέλω + να + verb replaces the missing infinitive in Greek.",
+      "tags": ["verbs", "present-tense", "sentence-use", "want", "na-construction", "lesson-1"]
+    },
+    {
+      "id": "verbs-015",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Paradigm (go)",
+      "en": ["Conjugate 'go' present (all 6)."],
+      "gr": ["Verb: πηγαινω (piyeno)", "1. piyeno", "2. piyenis", "3. piyeni", "4. piyenoume", "5. piyenete", "6. piyenoun"],
+      "notes": "πηγαίνω / πηγαίνεις / πηγαίνει / πηγαίνουμε / πηγαίνετε / πηγαίνουν. Short form 'πάω' is also very common in speech.",
+      "tags": ["verbs", "present-tense", "full-paradigm", "go", "lesson-1"]
+    },
+    {
+      "id": "verbs-016",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense", "past-simple"],
+      "concept": "Verb — Tense Flip (start / begin)",
+      "en": ["I start / begin (present)", "I started (past simple)"],
+      "gr": ["1. xekinao", "2. xekinisa"],
+      "notes": "ξεκινάω → ξεκίνησα. Class-2 verb. Past simple pattern: drop -άω, add -ησα.",
+      "tags": ["verbs", "tense-flip", "start", "lesson-1"]
+    },
+    {
+      "id": "verbs-017",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Recognize (be careful / pay attention)",
+      "en": ["I'm careful / I pay attention.", "Imperative: 'Watch out!'"],
+      "gr": ["1. prosexo", "2. Imperative: Prosexe!"],
+      "notes": "προσέχω = I pay attention / I'm careful. Common imperative: Πρόσεξε! (Watch out! / Be careful!).",
+      "tags": ["verbs", "present-tense", "be-careful", "lesson-1"]
+    },
+    {
+      "id": "verbs-018",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Recognize (speak)",
+      "en": ["I speak / talk.", "Do you speak Greek?"],
+      "gr": ["1. milao", "2. Milas elinika?"],
+      "notes": "μιλάω / μιλάς / μιλάει / μιλάμε / μιλάτε / μιλάνε. Μιλάς ελληνικά; = Do you speak Greek?",
+      "tags": ["verbs", "present-tense", "speak", "lesson-1"]
+    },
+    {
+      "id": "verbs-019",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Sentence Use (see)",
+      "en": ["You see me.", "I see (1st sg)."],
+      "gr": ["1. Esi me vlepis.", "2. vlepo"],
+      "notes": "Εσύ με βλέπεις. βλέπω / βλέπεις / βλέπει. 'Esi' = you (emphatic). Difference from κοιτάζω: βλέπω is passive perception ('see'), κοιτάζω is active ('look at').",
+      "tags": ["verbs", "present-tense", "sentence-use", "see", "lesson-1"]
+    },
+    {
+      "id": "verbs-020",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Recognize (look at / watch)",
+      "en": ["I look at / I watch.", "Compare to vlepo (see)."],
+      "gr": ["1. kitazo"],
+      "notes": "κοιτάζω. Active looking AT something, versus βλέπω which is passive 'see'.",
+      "tags": ["verbs", "present-tense", "look", "lesson-1"]
+    },
+    {
+      "id": "verbs-021",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Recognize (need, mid-voice)",
+      "en": ["I need.", "I need help."],
+      "gr": ["1. hreiazomai", "2. Hreiazomai voithia."],
+      "notes": "χρειάζομαι. MID-VOICE verb — ends in -μαι, not -ω. Χρειάζομαι βοήθεια = I need help.",
+      "tags": ["verbs", "present-tense", "need", "mid-voice", "lesson-1"]
+    },
+    {
+      "id": "verbs-022",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Sentence Use (like, impersonal)",
+      "en": ["I like it.", "I like the coffee.", "Pattern: 'to-me it-pleases'"],
+      "gr": ["1. Mou aresei.", "2. Mou aresei o kafes.", "3. aresei = (it) pleases"],
+      "notes": "Μου αρέσει. Impersonal construction — literally 'to-me it-pleases'. For plural subject: Μου αρέσουν (e.g., Μου αρέσουν τα βιβλία = I like the books).",
+      "tags": ["verbs", "present-tense", "sentence-use", "like", "impersonal", "lesson-1"]
+    },
+    {
+      "id": "verbs-023",
+      "category": "verb_conjugations",
+      "subcategories": ["future-tense"],
+      "concept": "Verb — Future Tense Marker (tha)",
+      "en": ["I will be seeing (continuous future).", "I will see (simple future).", "Pattern: tha + verb"],
+      "gr": ["1. Tha vlepo (continuous future)", "2. Tha do (simple future)", "3. tha = θα"],
+      "notes": "θα + present stem = continuous future ('will be -ing'). θα + perfective stem = simple future ('will'). Distinction matters in Greek the way English uses progressive vs. simple future.",
+      "tags": ["verbs", "future-tense", "tha-marker", "lesson-1"]
+    },
+    {
+      "id": "verbs-024",
+      "category": "verb_conjugations",
+      "subcategories": ["past-simple"],
+      "concept": "Verb — Past Simple Example (start)",
+      "en": ["I started / began.", "Compare to present form."],
+      "gr": ["1. Xekinisa", "2. Present: xekinao"],
+      "notes": "ξεκίνησα = aorist (past simple) 1st singular. Pattern for -άω verbs: stem + -ησα.",
+      "tags": ["verbs", "past-simple", "start", "lesson-1"]
     },
     {
       "id": "nouns-001",
       "category": "noun_declension",
       "subcategories": [],
       "concept": "Noun — Recognition + Gender",
-      "en": [
-        "the friend",
-        "the house",
-        "the door"
-      ],
-      "gr": [
-        "1. o filos (masc.)",
-        "2. to spiti (neut.)",
-        "3. i porta (fem.)"
-      ],
+      "en": ["the friend", "the house", "the door"],
+      "gr": ["1. o filos (masc.)", "2. to spiti (neut.)", "3. i porta (fem.)"],
       "notes": "Definite articles: ο (masc.), η (fem.), το (neut.). Greek: ο φίλος, το σπίτι, η πόρτα.",
       "tags": ["nouns", "recognition", "gender"]
     },
@@ -130,15 +284,8 @@
       "category": "noun_declension",
       "subcategories": [],
       "concept": "Noun — Full Declension (neuter)",
-      "en": [
-        "Decline 'the house' (to spiti) — neuter.",
-        "Singular: nom / gen / acc",
-        "Plural:   nom / gen / acc"
-      ],
-      "gr": [
-        "Sg: to spiti / tou spitiou / to spiti",
-        "Pl: ta spitia / ton spition / ta spitia"
-      ],
+      "en": ["Decline 'the house' (to spiti) — neuter.", "Singular: nom / gen / acc", "Plural:   nom / gen / acc"],
+      "gr": ["Sg: to spiti / tou spitiou / to spiti", "Pl: ta spitia / ton spition / ta spitia"],
       "notes": "το σπίτι / του σπιτιού / το σπίτι · τα σπίτια / των σπιτιών / τα σπίτια. Neuter nouns ending in -ι are very common.",
       "tags": ["nouns", "full-declension", "neuter"]
     },
@@ -147,15 +294,8 @@
       "category": "noun_declension",
       "subcategories": [],
       "concept": "Noun — Identify the Case",
-      "en": [
-        "Sentence: 'Vlepo ton filo mou.'",
-        "Identify the case of 'ton filo' and why."
-      ],
-      "gr": [
-        "1. Accusative (direct object)",
-        "2. Greek: Βλέπω τον φίλο μου.",
-        "3. English: I see my friend."
-      ],
+      "en": ["Sentence: 'Vlepo ton filo mou.'", "Identify the case of 'ton filo' and why."],
+      "gr": ["1. Accusative (direct object)", "2. Greek: Βλέπω τον φίλο μου.", "3. English: I see my friend."],
       "notes": "Accusative marks the direct object. Masculine nominative 'o filos' becomes 'ton filo' in accusative singular.",
       "tags": ["nouns", "case", "accusative"]
     },
@@ -164,16 +304,8 @@
       "category": "noun_declension",
       "subcategories": [],
       "concept": "Noun — Singular → Plural",
-      "en": [
-        "1. the woman",
-        "2. the man",
-        "3. the child"
-      ],
-      "gr": [
-        "1. i gynaika → oi gynaikes",
-        "2. o andras → oi andres",
-        "3. to paidi → ta paidia"
-      ],
+      "en": ["1. the woman", "2. the man", "3. the child"],
+      "gr": ["1. i gynaika → oi gynaikes", "2. o andras → oi andres", "3. to paidi → ta paidia"],
       "notes": "η γυναίκα → οι γυναίκες · ο άνδρας → οι άνδρες · το παιδί → τα παιδιά. Note the article changes too.",
       "tags": ["nouns", "plural"]
     },
@@ -182,32 +314,28 @@
       "category": "noun_declension",
       "subcategories": [],
       "concept": "Noun — Recognition + Gender",
-      "en": [
-        "the book",
-        "the coffee",
-        "the water"
-      ],
-      "gr": [
-        "1. to vivlio (neut.)",
-        "2. o kafes (masc.)",
-        "3. to nero (neut.)"
-      ],
+      "en": ["the book", "the coffee", "the water"],
+      "gr": ["1. to vivlio (neut.)", "2. o kafes (masc.)", "3. to nero (neut.)"],
       "notes": "το βιβλίο, ο καφές, το νερό. Common everyday nouns.",
       "tags": ["nouns", "recognition", "gender"]
+    },
+    {
+      "id": "nouns-006",
+      "category": "noun_declension",
+      "subcategories": [],
+      "concept": "Noun — Recognition + Gender (people)",
+      "en": ["the boy", "the girl"],
+      "gr": ["1. to agori (neut.)", "2. to koritsi (neut.)"],
+      "notes": "το αγόρι, το κορίτσι. Both are NEUTER in Greek despite referring to people. The diminutive endings -ι / -άκι usually make a word neuter.",
+      "tags": ["nouns", "recognition", "gender", "people", "lesson-1"]
     },
     {
       "id": "vocab-001",
       "category": "conversational_vocab",
       "subcategories": [],
       "concept": "Vocab — Phrase Translation",
-      "en": [
-        "Good morning.",
-        "Good evening."
-      ],
-      "gr": [
-        "1. Kalimera.",
-        "2. Kalispera."
-      ],
+      "en": ["Good morning.", "Good evening."],
+      "gr": ["1. Kalimera.", "2. Kalispera."],
       "notes": "Καλημέρα (used until early afternoon) · Καλησπέρα (afternoon / evening greeting).",
       "tags": ["vocab", "greetings", "phrase-translation"]
     },
@@ -216,16 +344,9 @@
       "category": "conversational_vocab",
       "subcategories": [],
       "concept": "Vocab — Greeting + Reply",
-      "en": [
-        "Greeting: 'How are you?' (informal)",
-        "Give the typical Greek back-and-forth."
-      ],
-      "gr": [
-        "1. Ti kaneis?",
-        "2. Kala, esy?",
-        "3. Kala, efharisto."
-      ],
-      "notes": "Τι κάνεις; (informal 'how are you?') · Καλά, εσύ; ('good, you?') · Καλά, ευχαριστώ. Use Τι κάνετε; for formal/plural.",
+      "en": ["Greeting: 'How are you?' (informal)", "Give the typical Greek back-and-forth."],
+      "gr": ["1. Ti kaneis?", "2. Kala, esy?", "3. Kala, efharisto."],
+      "notes": "Τι κάνεις; (informal) · Καλά, εσύ; · Καλά, ευχαριστώ. Use Τι κάνετε; for formal/plural.",
       "tags": ["vocab", "greeting-reply", "informal"]
     },
     {
@@ -233,15 +354,9 @@
       "category": "conversational_vocab",
       "subcategories": [],
       "concept": "Vocab — Situational (ordering)",
-      "en": [
-        "Situation: ordering a coffee at a café.",
-        "What do you say?"
-      ],
-      "gr": [
-        "1. Enan kafe, parakalo.",
-        "2. More polite: Tha ithela enan kafe."
-      ],
-      "notes": "Έναν καφέ, παρακαλώ. (A coffee, please.) · Θα ήθελα έναν καφέ. (I would like a coffee.)",
+      "en": ["Situation: ordering a coffee at a café.", "What do you say?"],
+      "gr": ["1. Enan kafe, parakalo.", "2. More polite: Tha ithela enan kafe."],
+      "notes": "Έναν καφέ, παρακαλώ. · Θα ήθελα έναν καφέ.",
       "tags": ["vocab", "situational", "ordering"]
     },
     {
@@ -249,15 +364,9 @@
       "category": "conversational_vocab",
       "subcategories": [],
       "concept": "Vocab — Word + Example Sentence",
-      "en": [
-        "Word: 'thank you'",
-        "Use in a sentence."
-      ],
-      "gr": [
-        "1. efharisto",
-        "2. Efharisto poly gia ti voithia."
-      ],
-      "notes": "ευχαριστώ (thanks) · Ευχαριστώ πολύ για τη βοήθεια. (Thank you very much for the help.)",
+      "en": ["Word: 'thank you'", "Use in a sentence."],
+      "gr": ["1. efharisto", "2. Efharisto poly gia ti voithia."],
+      "notes": "ευχαριστώ · Ευχαριστώ πολύ για τη βοήθεια.",
       "tags": ["vocab", "word-example"]
     },
     {
@@ -265,16 +374,170 @@
       "category": "conversational_vocab",
       "subcategories": [],
       "concept": "Vocab — Phrase Translation (travel)",
-      "en": [
-        "How much does it cost?",
-        "Where is the bathroom?"
-      ],
-      "gr": [
-        "1. Poso kostizei?",
-        "2. Pou einai i toualeta?"
-      ],
-      "notes": "Πόσο κοστίζει; · Πού είναι η τουαλέτα; — essential travel phrases.",
+      "en": ["How much does it cost?", "Where is the bathroom?"],
+      "gr": ["1. Poso kostizei?", "2. Pou einai i toualeta?"],
+      "notes": "Πόσο κοστίζει; · Πού είναι η τουαλέτα;",
       "tags": ["vocab", "travel", "phrase-translation"]
+    },
+    {
+      "id": "vocab-006",
+      "category": "conversational_vocab",
+      "subcategories": [],
+      "concept": "Vocab — Days of the Week",
+      "en": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      "gr": ["1. Deftera", "2. Triti", "3. Tetarti", "4. Pempti", "5. Paraskevi", "6. Savato", "7. Kyriaki"],
+      "notes": "Δευτέρα · Τρίτη · Τετάρτη · Πέμπτη · Παρασκευή · Σάββατο · Κυριακή. All feminine nouns. Δευτέρα literally means 'second' (Monday is day 2 of the Greek week).",
+      "tags": ["vocab", "days", "time", "lesson-1"]
+    },
+    {
+      "id": "vocab-007",
+      "category": "conversational_vocab",
+      "subcategories": [],
+      "concept": "Vocab — Numbers 1–10",
+      "en": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+      "gr": ["1. ena", "2. dyo", "3. tria", "4. tessera", "5. pente", "6. exi", "7. epta", "8. okto", "9. ennea", "10. deka"],
+      "notes": "ένα · δύο · τρία · τέσσερα · πέντε · έξι · επτά · οκτώ · εννέα · δέκα. Neuter counting forms shown. 1, 3, 4 vary by gender: enas/mia/ena (1), tris/treis (3), tessereis (3 fem./4 masc.+fem.).",
+      "tags": ["vocab", "numbers", "lesson-1"]
+    },
+    {
+      "id": "vocab-008",
+      "category": "conversational_vocab",
+      "subcategories": [],
+      "concept": "Vocab — Greek-origin Loanwords",
+      "en": ["system", "category", "city"],
+      "gr": ["1. systima", "2. katigoria", "3. poli"],
+      "notes": "σύστημα · κατηγορία · πόλη. The English 'system' and 'category' are direct loanwords. 'poli' is feminine; 'metropolis' = μητρόπολις ('mother-city').",
+      "tags": ["vocab", "loanwords", "lesson-1"]
+    },
+    {
+      "id": "vocab-009",
+      "category": "conversational_vocab",
+      "subcategories": [],
+      "concept": "Vocab — Example Sentence (try / can)",
+      "en": ["I'm trying hard, I can do it."],
+      "gr": ["1. Ego prospatho dynata, boro na to kano."],
+      "notes": "Εγώ προσπαθώ δυνατά, μπορώ να το κάνω. prospatho = I try · dynata = hard/strongly · boro = I can · na to kano = to do it. (Source had 'denaki' — likely 'dynata'; please verify.)",
+      "tags": ["vocab", "example-sentence", "lesson-1"]
+    },
+    {
+      "id": "vocab-010",
+      "category": "conversational_vocab",
+      "subcategories": [],
+      "concept": "Vocab — Phrase (Where is...?)",
+      "en": ["Where is the ___?", "Example: Where is the bathroom?"],
+      "gr": ["1. Pou einai ...?", "2. Pou einai i toualeta?"],
+      "notes": "Πού είναι ...; — universal 'where is' opener. Often shortened in speech: 'Pou ine?' (Πού 'ναι;).",
+      "tags": ["vocab", "phrase", "questions", "lesson-1"]
+    },
+    {
+      "id": "fw-001",
+      "category": "function_words",
+      "subcategories": [],
+      "concept": "Function — Question Words",
+      "en": ["where?", "why? / for what?"],
+      "gr": ["1. pou", "2. ya ti"],
+      "notes": "πού (where) · γιατί (why / for what). 'Pou einai?' = Where is...? 'Ya ti?' = Why? / For what reason?",
+      "tags": ["function-words", "questions", "lesson-1"]
+    },
+    {
+      "id": "fw-002",
+      "category": "function_words",
+      "subcategories": [],
+      "concept": "Function — Yes / No / OK",
+      "en": ["yes", "no", "ok / alright"],
+      "gr": ["1. nai", "2. ohi", "3. entaxei"],
+      "notes": "ναι · όχι · εντάξει. Watch out: 'nai' = YES (counterintuitive for English speakers!). 'edaxi' is a common spoken variant of 'entaxei'.",
+      "tags": ["function-words", "yes-no", "lesson-1"]
+    },
+    {
+      "id": "fw-003",
+      "category": "function_words",
+      "subcategories": [],
+      "concept": "Function — Demonstratives (this)",
+      "en": ["this (neuter)", "this (feminine)", "this (masculine)"],
+      "gr": ["1. afto", "2. afti", "3. aftos"],
+      "notes": "αυτό · αυτή · αυτός. Demonstratives match the noun's gender. αυτό το βιβλίο (this book/neut), αυτή η γυναίκα (this woman/fem), αυτός ο άντρας (this man/masc).",
+      "tags": ["function-words", "demonstratives", "lesson-1"]
+    },
+    {
+      "id": "fw-004",
+      "category": "function_words",
+      "subcategories": [],
+      "concept": "Function — Modal / Infinitive Markers",
+      "en": ["must / have to", "to (infinitive marker)", "I want to know."],
+      "gr": ["1. prepi na", "2. na", "3. Thelo na xero."],
+      "notes": "πρέπει να · να · Θέλω να ξέρω. Greek has NO infinitive — 'na' + subjunctive replaces it. 'Thelo na xero' literally = 'I want that I know'.",
+      "tags": ["function-words", "na-construction", "modal", "lesson-1"]
+    },
+    {
+      "id": "fw-005",
+      "category": "function_words",
+      "subcategories": [],
+      "concept": "Function — Time (relative)",
+      "en": ["before", "after", "now", "tonight"],
+      "gr": ["1. prin", "2. meta", "3. tora", "4. apopse"],
+      "notes": "πριν · μετά · τώρα · απόψε. Common time connectors. 'Prin' and 'meta' can stand alone or take 'apo' (από = from): 'prin apo to dipno' = before dinner.",
+      "tags": ["function-words", "time", "lesson-1"]
+    },
+    {
+      "id": "fw-006",
+      "category": "function_words",
+      "subcategories": [],
+      "concept": "Function — Time (day frame)",
+      "en": ["yesterday", "today", "tomorrow"],
+      "gr": ["1. ekthes", "2. simera", "3. avrio"],
+      "notes": "εχθές · σήμερα · αύριο. 'Ekthes' is sometimes spelled / pronounced 'hthes' (χθες).",
+      "tags": ["function-words", "time", "days", "lesson-1"]
+    },
+    {
+      "id": "fw-007",
+      "category": "function_words",
+      "subcategories": [],
+      "concept": "Function — Location & Direction",
+      "en": ["here", "there", "left", "right"],
+      "gr": ["1. edo", "2. ekei", "3. aristera", "4. dexia"],
+      "notes": "εδώ · εκεί · αριστερά · δεξιά. 'edo' / 'ekei' are the basic here/there pair.",
+      "tags": ["function-words", "location", "lesson-1"]
+    },
+    {
+      "id": "alpha-001",
+      "category": "alphabet",
+      "subcategories": [],
+      "concept": "Alphabet — Section 1 (letters 1–6)",
+      "en": ["alpha (a)", "vita (v)", "gamma (g/y)", "delta (th as in 'this')", "epsilon (e)", "zita (z)"],
+      "gr": ["1. Α α", "2. Β β", "3. Γ γ", "4. Δ δ", "5. Ε ε", "6. Ζ ζ"],
+      "notes": "Α α — 'a' as in 'father'. Β β — 'v' (NOT 'b'!). Γ γ — soft 'g' or 'y' before e/i. Δ δ — 'th' as in 'this' (voiced). Ε ε — short 'e'. Ζ ζ — 'z'.",
+      "tags": ["alphabet", "letters-1-6", "lesson-1"]
+    },
+    {
+      "id": "alpha-002",
+      "category": "alphabet",
+      "subcategories": [],
+      "concept": "Alphabet — Section 2 (letters 7–12)",
+      "en": ["ita (i)", "thita (th as in 'think')", "yota (i)", "kappa (k)", "lamda (l)", "mi (m)"],
+      "gr": ["7. Η η", "8. Θ θ", "9. Ι ι", "10. Κ κ", "11. Λ λ", "12. Μ μ"],
+      "notes": "Η η — long 'i'. Θ θ — 'th' as in 'think' (unvoiced — different from Δ!). Ι ι — short 'i'. Κ κ — 'k'. Λ λ — 'l'. Μ μ — 'm'.",
+      "tags": ["alphabet", "letters-7-12", "lesson-1"]
+    },
+    {
+      "id": "alpha-003",
+      "category": "alphabet",
+      "subcategories": [],
+      "concept": "Alphabet — Section 3 (letters 13–18)",
+      "en": ["ni (n)", "ksi (x/ks)", "omicron (o)", "pi (p)", "ro (r)", "sigma (s)"],
+      "gr": ["13. Ν ν", "14. Ξ ξ", "15. Ο ο", "16. Π π", "17. Ρ ρ", "18. Σ σ / ς"],
+      "notes": "Ν ν — 'n'. Ξ ξ — 'ks' / 'x' (one letter, two sounds). Ο ο — short 'o'. Π π — 'p'. Ρ ρ — rolled 'r'. Σ σ / ς — 's' (ς is used ONLY at end of words).",
+      "tags": ["alphabet", "letters-13-18", "lesson-1"]
+    },
+    {
+      "id": "alpha-004",
+      "category": "alphabet",
+      "subcategories": [],
+      "concept": "Alphabet — Section 4 (letters 19–24)",
+      "en": ["taf (t)", "ipsilon (i)", "fi (f)", "hi (h/ch)", "psi (ps)", "omega (o)"],
+      "gr": ["19. Τ τ", "20. Υ υ", "21. Φ φ", "22. Χ χ", "23. Ψ ψ", "24. Ω ω"],
+      "notes": "Τ τ — 't'. Υ υ — 'i' (same sound as Η, Ι). Φ φ — 'f'. Χ χ — rough 'h' (like German 'ch' or Spanish 'j'). Ψ ψ — 'ps' (one letter). Ω ω — 'o' (same sound as Ο).",
+      "tags": ["alphabet", "letters-19-24", "lesson-1"]
     }
   ]
 }
