@@ -1,20 +1,280 @@
 {
   "deck": "greek_flashcards",
   "language": "el",
+  "categories": [
+    {
+      "id": "verb_conjugations",
+      "label": "Verb Conjugations",
+      "subcategories": ["present-tense", "past-simple", "past-continuous"]
+    },
+    {
+      "id": "noun_declension",
+      "label": "Noun Declension",
+      "subcategories": []
+    },
+    {
+      "id": "conversational_vocab",
+      "label": "Conversational Vocab",
+      "subcategories": []
+    }
+  ],
   "cards": [
     {
       "id": "verbs-001",
-      "concept": "verb conjugation",
-      "example": [
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Sentence Use",
+      "en": [
         "I wait.",
+        "Use 'wait' in a sentence."
+      ],
+      "gr": [
+        "perimeno",
+        "Nai, se perimeno edo."
+      ],
+      "notes": "Present tense, 1st person singular of περιμένω (perimeno = to wait). Full sentence: Ναι, σε περιμένω εδώ. (Yes, I'm waiting for you here.)",
+      "tags": ["verbs", "present-tense", "sentence-use"]
+    },
+    {
+      "id": "verbs-002",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense"],
+      "concept": "Verb — Full Paradigm (present)",
+      "en": [
+        "Conjugate 'to have' in the present tense:",
+        "I / you / he-she / we / you-all / they"
+      ],
+      "gr": [
+        "Verb: εχω (eho) — to have",
+        "1. eho",
+        "2. eheis",
+        "3. ehei",
+        "4. ehoume",
+        "5. ehete",
+        "6. ehoun"
+      ],
+      "notes": "έχω, έχεις, έχει, έχουμε, έχετε, έχουν. The verb 'to have' is one of the most common Greek verbs.",
+      "tags": ["verbs", "present-tense", "full-paradigm"]
+    },
+    {
+      "id": "verbs-003",
+      "category": "verb_conjugations",
+      "subcategories": ["present-tense", "past-simple", "past-continuous"],
+      "concept": "Verb — Tense Flip (eat, 1st person sg)",
+      "en": [
+        "I eat.",
+        "I ate.",
+        "I was eating."
+      ],
+      "gr": [
+        "1. troo",
+        "2. efaga",
+        "3. etroga"
+      ],
+      "notes": "τρώω (present), έφαγα (past simple / aorist), έτρωγα (past continuous / imperfect). Notice the stress shifts back in the past tenses.",
+      "tags": ["verbs", "tense-flip"]
+    },
+    {
+      "id": "verbs-004",
+      "category": "verb_conjugations",
+      "subcategories": ["past-simple"],
+      "concept": "Verb — Identify the Form",
+      "en": [
+        "Greek form: 'pigame'",
+        "Give person, number, tense, and meaning."
+      ],
+      "gr": [
+        "1. 1st person plural",
+        "2. Past simple (aorist) of πηγαίνω (to go)",
+        "3. Translation: 'we went'"
+      ],
+      "notes": "πάμε = 'we go' (present); πήγαμε = 'we went' (past simple). Stress shifts back in the aorist.",
+      "tags": ["verbs", "past-simple", "identify-form"]
+    },
+    {
+      "id": "verbs-005",
+      "category": "verb_conjugations",
+      "subcategories": ["past-continuous"],
+      "concept": "Verb — Sentence Use (past continuous)",
+      "en": [
+        "I was reading.",
         "Use in a sentence."
       ],
-      "answer": [
-        "perimeno",
-        "Nai, se perimeno etho."
+      "gr": [
+        "1. diavaza",
+        "2. Diavaza ena vivlio otan mou tilefonises."
       ],
-      "notes": "Present tense, 1st person singular. Greek: περιμένω. Sentence: Ναι, σε περιμένω εδώ. (Yes, I'm waiting for you here.)",
-      "tags": ["verbs", "present-tense"]
+      "notes": "διάβαζα = 1st sg past continuous of διαβάζω. Sentence: Διάβαζα ένα βιβλίο όταν μου τηλεφώνησες. (I was reading a book when you called me.)",
+      "tags": ["verbs", "past-continuous", "sentence-use"]
+    },
+    {
+      "id": "nouns-001",
+      "category": "noun_declension",
+      "subcategories": [],
+      "concept": "Noun — Recognition + Gender",
+      "en": [
+        "the friend",
+        "the house",
+        "the door"
+      ],
+      "gr": [
+        "1. o filos (masc.)",
+        "2. to spiti (neut.)",
+        "3. i porta (fem.)"
+      ],
+      "notes": "Definite articles: ο (masc.), η (fem.), το (neut.). Greek: ο φίλος, το σπίτι, η πόρτα.",
+      "tags": ["nouns", "recognition", "gender"]
+    },
+    {
+      "id": "nouns-002",
+      "category": "noun_declension",
+      "subcategories": [],
+      "concept": "Noun — Full Declension (neuter)",
+      "en": [
+        "Decline 'the house' (to spiti) — neuter.",
+        "Singular: nom / gen / acc",
+        "Plural:   nom / gen / acc"
+      ],
+      "gr": [
+        "Sg: to spiti / tou spitiou / to spiti",
+        "Pl: ta spitia / ton spition / ta spitia"
+      ],
+      "notes": "το σπίτι / του σπιτιού / το σπίτι · τα σπίτια / των σπιτιών / τα σπίτια. Neuter nouns ending in -ι are very common.",
+      "tags": ["nouns", "full-declension", "neuter"]
+    },
+    {
+      "id": "nouns-003",
+      "category": "noun_declension",
+      "subcategories": [],
+      "concept": "Noun — Identify the Case",
+      "en": [
+        "Sentence: 'Vlepo ton filo mou.'",
+        "Identify the case of 'ton filo' and why."
+      ],
+      "gr": [
+        "1. Accusative (direct object)",
+        "2. Greek: Βλέπω τον φίλο μου.",
+        "3. English: I see my friend."
+      ],
+      "notes": "Accusative marks the direct object. Masculine nominative 'o filos' becomes 'ton filo' in accusative singular.",
+      "tags": ["nouns", "case", "accusative"]
+    },
+    {
+      "id": "nouns-004",
+      "category": "noun_declension",
+      "subcategories": [],
+      "concept": "Noun — Singular → Plural",
+      "en": [
+        "1. the woman",
+        "2. the man",
+        "3. the child"
+      ],
+      "gr": [
+        "1. i gynaika → oi gynaikes",
+        "2. o andras → oi andres",
+        "3. to paidi → ta paidia"
+      ],
+      "notes": "η γυναίκα → οι γυναίκες · ο άνδρας → οι άνδρες · το παιδί → τα παιδιά. Note the article changes too.",
+      "tags": ["nouns", "plural"]
+    },
+    {
+      "id": "nouns-005",
+      "category": "noun_declension",
+      "subcategories": [],
+      "concept": "Noun — Recognition + Gender",
+      "en": [
+        "the book",
+        "the coffee",
+        "the water"
+      ],
+      "gr": [
+        "1. to vivlio (neut.)",
+        "2. o kafes (masc.)",
+        "3. to nero (neut.)"
+      ],
+      "notes": "το βιβλίο, ο καφές, το νερό. Common everyday nouns.",
+      "tags": ["nouns", "recognition", "gender"]
+    },
+    {
+      "id": "vocab-001",
+      "category": "conversational_vocab",
+      "subcategories": [],
+      "concept": "Vocab — Phrase Translation",
+      "en": [
+        "Good morning.",
+        "Good evening."
+      ],
+      "gr": [
+        "1. Kalimera.",
+        "2. Kalispera."
+      ],
+      "notes": "Καλημέρα (used until early afternoon) · Καλησπέρα (afternoon / evening greeting).",
+      "tags": ["vocab", "greetings", "phrase-translation"]
+    },
+    {
+      "id": "vocab-002",
+      "category": "conversational_vocab",
+      "subcategories": [],
+      "concept": "Vocab — Greeting + Reply",
+      "en": [
+        "Greeting: 'How are you?' (informal)",
+        "Give the typical Greek back-and-forth."
+      ],
+      "gr": [
+        "1. Ti kaneis?",
+        "2. Kala, esy?",
+        "3. Kala, efharisto."
+      ],
+      "notes": "Τι κάνεις; (informal 'how are you?') · Καλά, εσύ; ('good, you?') · Καλά, ευχαριστώ. Use Τι κάνετε; for formal/plural.",
+      "tags": ["vocab", "greeting-reply", "informal"]
+    },
+    {
+      "id": "vocab-003",
+      "category": "conversational_vocab",
+      "subcategories": [],
+      "concept": "Vocab — Situational (ordering)",
+      "en": [
+        "Situation: ordering a coffee at a café.",
+        "What do you say?"
+      ],
+      "gr": [
+        "1. Enan kafe, parakalo.",
+        "2. More polite: Tha ithela enan kafe."
+      ],
+      "notes": "Έναν καφέ, παρακαλώ. (A coffee, please.) · Θα ήθελα έναν καφέ. (I would like a coffee.)",
+      "tags": ["vocab", "situational", "ordering"]
+    },
+    {
+      "id": "vocab-004",
+      "category": "conversational_vocab",
+      "subcategories": [],
+      "concept": "Vocab — Word + Example Sentence",
+      "en": [
+        "Word: 'thank you'",
+        "Use in a sentence."
+      ],
+      "gr": [
+        "1. efharisto",
+        "2. Efharisto poly gia ti voithia."
+      ],
+      "notes": "ευχαριστώ (thanks) · Ευχαριστώ πολύ για τη βοήθεια. (Thank you very much for the help.)",
+      "tags": ["vocab", "word-example"]
+    },
+    {
+      "id": "vocab-005",
+      "category": "conversational_vocab",
+      "subcategories": [],
+      "concept": "Vocab — Phrase Translation (travel)",
+      "en": [
+        "How much does it cost?",
+        "Where is the bathroom?"
+      ],
+      "gr": [
+        "1. Poso kostizei?",
+        "2. Pou einai i toualeta?"
+      ],
+      "notes": "Πόσο κοστίζει; · Πού είναι η τουαλέτα; — essential travel phrases.",
+      "tags": ["vocab", "travel", "phrase-translation"]
     }
   ]
 }

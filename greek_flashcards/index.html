@@ -10,20 +10,38 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="deck-name" id="deckName">Greek Flashcards</div>
+    <div class="deck-name" id="deckName">greek_flashcards</div>
+    <button class="dir-toggle" id="dirToggle" type="button" aria-label="Toggle direction">EN → GR</button>
     <div class="progress"><span id="cardIndex">0</span> / <span id="cardTotal">0</span></div>
   </header>
 
   <main class="card-stage">
     <section class="card" id="card" aria-live="polite">
-      <div class="concept" id="concept">Loading…</div>
-      <div class="example" id="example"></div>
+      <div class="row concept-row">
+        <div class="concept" id="concept">Loading…</div>
+        <button class="copy-btn" data-copy="concept" type="button" aria-label="Copy concept">Copy</button>
+      </div>
+
+      <div class="row prompt-row">
+        <div class="prompt" id="prompt"></div>
+        <button class="copy-btn" data-copy="prompt" type="button" aria-label="Copy prompt">Copy</button>
+      </div>
+
       <button class="reveal-btn" id="revealBtn" type="button">Tap to reveal answer</button>
-      <div class="answer hidden" id="answer"></div>
+
+      <div class="row answer-row hidden" id="answerRow">
+        <div class="answer" id="answer"></div>
+        <button class="copy-btn" data-copy="answer" type="button" aria-label="Copy answer">Copy</button>
+      </div>
+
       <details class="notes" id="notesWrap" hidden>
-        <summary>Notes</summary>
+        <summary>
+          <span>Notes</span>
+          <button class="copy-btn inline-copy" data-copy="notes" type="button" aria-label="Copy notes">Copy</button>
+        </summary>
         <div id="notes"></div>
       </details>
+
       <div class="tags" id="tags"></div>
     </section>
   </main>
@@ -31,8 +49,8 @@
   <nav class="controls">
     <button id="prevBtn" type="button" aria-label="Previous">‹ Prev</button>
     <button id="shuffleBtn" type="button" aria-label="Shuffle">Shuffle</button>
-    <select id="tagFilter" aria-label="Filter by tag">
-      <option value="">All tags</option>
+    <select id="categoryFilter" aria-label="Filter by category">
+      <option value="">All categories</option>
     </select>
     <button id="nextBtn" type="button" aria-label="Next">Next ›</button>
   </nav>

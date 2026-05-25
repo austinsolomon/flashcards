@@ -3,15 +3,20 @@ const state = {
   filtered: [],
   index: 0,
   revealed: false,
+  direction: 'en-to-gr',
+  category: '',
+  categories: [],
 };
 
 const els = {
   deckName: document.getElementById('deckName'),
+  dirToggle: document.getElementById('dirToggle'),
   cardIndex: document.getElementById('cardIndex'),
   cardTotal: document.getElementById('cardTotal'),
   concept: document.getElementById('concept'),
-  example: document.getElementById('example'),
+  prompt: document.getElementById('prompt'),
   answer: document.getElementById('answer'),
+  answerRow: document.getElementById('answerRow'),
   revealBtn: document.getElementById('revealBtn'),
   notesWrap: document.getElementById('notesWrap'),
   notes: document.getElementById('notes'),
@@ -19,26 +24,27 @@ const els = {
   prevBtn: document.getElementById('prevBtn'),
   nextBtn: document.getElementById('nextBtn'),
   shuffleBtn: document.getElementById('shuffleBtn'),
-  tagFilter: document.getElementById('tagFilter'),
+  categoryFilter: document.getElementById('categoryFilter'),
 };
 
 function formatLines(value) {
-  if (Array.isArray(value)) {
-    return value
-      .map((line, i) => (value.length > 1 ? `${i + 1}. ${line}` : line))
-      .join('\n');
-  }
+  if (Array.isArray(value)) return value.join('\n');
   return value || '';
+}
+
+function categoryLabel(id) {
+  const c = state.categories.find(c => c.id === id);
+  return c ? c.label : (id || '').replace(/_/g, ' ');
 }
 
 function render() {
   const card = state.filtered[state.index];
   if (!card) {
     els.concept.textContent = 'No cards match this filter.';
-    els.example.textContent = '';
+    els.prompt.textContent = '';
     els.answer.textContent = '';
     els.revealBtn.classList.add('hidden');
-    els.answer.classList.add('hidden');
+    els.answerRow.classList.add('hidden');
     els.notesWrap.hidden = true;
     els.tags.innerHTML = '';
     els.cardIndex.textContent = '0';
@@ -47,11 +53,14 @@ function render() {
   }
 
   els.concept.textContent = card.concept || '';
-  els.example.textContent = formatLines(card.example);
-  els.answer.textContent = formatLines(card.answer);
+
+  const promptArr = state.direction === 'en-to-gr' ? card.en : card.gr;
+  const answerArr = state.direction === 'en-to-gr' ? card.gr : card.en;
+  els.prompt.textContent = formatLines(promptArr);
+  els.answer.textContent = formatLines(answerArr);
 
   state.revealed = false;
-  els.answer.classList.add('hidden');
+  els.answerRow.classList.add('hidden');
   els.revealBtn.classList.remove('hidden');
   els.revealBtn.textContent = 'Tap to reveal answer';
 
@@ -64,6 +73,18 @@ function render() {
   }
 
   els.tags.innerHTML = '';
+  if (card.category) {
+    const span = document.createElement('span');
+    span.className = 'tag tag-category';
+    span.textContent = categoryLabel(card.category);
+    els.tags.appendChild(span);
+  }
+  (card.subcategories || []).forEach(sub => {
+    const span = document.createElement('span');
+    span.className = 'tag tag-sub';
+    span.textContent = sub;
+    els.tags.appendChild(span);
+  });
   (card.tags || []).forEach(t => {
     const span = document.createElement('span');
     span.className = 'tag';
@@ -77,7 +98,7 @@ function render() {
 
 function reveal() {
   state.revealed = !state.revealed;
-  els.answer.classList.toggle('hidden', !state.revealed);
+  els.answerRow.classList.toggle('hidden', !state.revealed);
   els.revealBtn.textContent = state.revealed ? 'Hide answer' : 'Tap to reveal answer';
 }
 
@@ -102,46 +123,96 @@ function shuffle() {
   render();
 }
 
-function applyTagFilter(tag) {
-  state.filtered = tag
-    ? state.all.filter(c => (c.tags || []).includes(tag))
+function toggleDirection() {
+  state.direction = state.direction === 'en-to-gr' ? 'gr-to-en' : 'en-to-gr';
+  els.dirToggle.textContent = state.direction === 'en-to-gr' ? 'EN → GR' : 'GR → EN';
+  render();
+}
+
+function applyCategoryFilter(cat) {
+  state.category = cat;
+  state.filtered = cat
+    ? state.all.filter(c => c.category === cat)
     : state.all.slice();
   state.index = 0;
   render();
 }
 
-function populateTagFilter() {
-  const tags = new Set();
-  state.all.forEach(c => (c.tags || []).forEach(t => tags.add(t)));
-  [...tags].sort().forEach(t => {
+function populateCategoryFilter() {
+  state.categories.forEach(c => {
     const opt = document.createElement('option');
-    opt.value = t;
-    opt.textContent = t;
-    els.tagFilter.appendChild(opt);
+    opt.value = c.id;
+    opt.textContent = c.label;
+    els.categoryFilter.appendChild(opt);
   });
 }
+
+async function copyText(text, btn) {
+  const orig = btn.textContent;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    btn.textContent = 'Copied';
+    btn.classList.add('copied');
+  } catch (e) {
+    btn.textContent = 'Failed';
+  }
+  setTimeout(() => {
+    btn.textContent = orig;
+    btn.classList.remove('copied');
+  }, 1200);
+}
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.copy-btn');
+  if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const key = btn.dataset.copy;
+  const sourceEl = {
+    concept: els.concept,
+    prompt: els.prompt,
+    answer: els.answer,
+    notes: els.notes,
+  }[key];
+  if (sourceEl) copyText(sourceEl.textContent, btn);
+});
 
 async function load() {
   const res = await fetch('cards.json', { cache: 'no-cache' });
   const data = await res.json();
   els.deckName.textContent = data.deck || 'Flashcards';
   state.all = data.cards || [];
+  state.categories = data.categories || [];
   state.filtered = state.all.slice();
-  populateTagFilter();
+  populateCategoryFilter();
   render();
 }
 
 els.revealBtn.addEventListener('click', reveal);
-els.example.addEventListener('click', reveal);
+els.prompt.addEventListener('click', reveal);
 els.nextBtn.addEventListener('click', next);
 els.prevBtn.addEventListener('click', prev);
 els.shuffleBtn.addEventListener('click', shuffle);
-els.tagFilter.addEventListener('change', e => applyTagFilter(e.target.value));
+els.dirToggle.addEventListener('click', toggleDirection);
+els.categoryFilter.addEventListener('change', e => applyCategoryFilter(e.target.value));
 
 document.addEventListener('keydown', e => {
+  if (e.target.matches('input, textarea, select')) return;
   if (e.key === 'ArrowRight') next();
   else if (e.key === 'ArrowLeft') prev();
   else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); reveal(); }
+  else if (e.key.toLowerCase() === 'd') toggleDirection();
 });
 
 if ('serviceWorker' in navigator) {
@@ -152,5 +223,5 @@ if ('serviceWorker' in navigator) {
 
 load().catch(err => {
   els.concept.textContent = 'Failed to load cards.json';
-  els.example.textContent = String(err);
+  els.prompt.textContent = String(err);
 });
