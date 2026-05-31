@@ -1,6 +1,8 @@
 const state = {
   all: [], filtered: [], index: 0, revealed: false,
   direction: 'en-to-gr', category: '', categories: [],
+  stats: { streak: 0, best: 0, correct: 0, total: 0 },
+  currentAnswered: false,
 };
 
 const els = {
@@ -10,6 +12,8 @@ const els = {
   cardTotal: document.getElementById('cardTotal'),
   concept: document.getElementById('concept'),
   prompt: document.getElementById('prompt'),
+  mcOptions: document.getElementById('mcOptions'),
+  feedback: document.getElementById('feedback'),
   answerRow: document.getElementById('answerRow'),
   answerBlocks: document.getElementById('answerBlocks'),
   revealBtn: document.getElementById('revealBtn'),
@@ -22,52 +26,54 @@ const els = {
   bottomRevealBtn: document.getElementById('bottomRevealBtn'),
   categoryFilter: document.getElementById('categoryFilter'),
   instructionsStrip: document.getElementById('instructionsStrip'),
+  statStreak: document.getElementById('statStreak'),
+  statBest: document.getElementById('statBest'),
+  statScore: document.getElementById('statScore'),
+  resetStats: document.getElementById('resetStats'),
 };
 
 const INSTRUCTIONS = {
-  'Sentence Use': 'Translate + use in a Greek sentence. Ex: I wait → perimeno + sentence.',
-  'Full Paradigm': 'Conjugate all 6 persons: I / you / s-he / we / you-pl / they.',
-  'Tense Flip': 'Translate across present / past simple / past continuous.',
-  'Identify the Form': 'State person, number, tense, meaning.',
-  'Identify the Case': 'Name the grammatical case and why.',
-  'Recognition + Gender': 'Give Greek word + article (ο / η / το).',
-  'Full Declension': 'Decline nom / gen / acc, sg + pl.',
-  'Singular → Plural': 'Give the plural form (with article).',
-  'Phrase Translation': 'Translate the phrase.',
-  'Greeting + Reply': 'Give the typical back-and-forth.',
-  'Situational': 'Say what you would say in Greek.',
-  'Word + Example': 'Translate + use in a sentence.',
-  'Negation Example': 'Use den + (pronoun) + verb.',
-  'Future Marker': 'Apply θα + verb (continuous or simple).',
-  'Past Simple': 'Give the aorist (past simple) form.',
-  'Past Simple Example': 'Give the aorist form; compare to present.',
-  'Recognize': 'Translate the verb / word.',
-  'Modal / Infinitive Markers': 'Translate; remember Greek has no infinitive.',
-  'Demonstratives': 'Give all 3 genders.',
-  'Question Words': 'Translate.',
-  'Yes / No / OK': 'Translate.',
-  'Time (relative)': 'Translate.',
-  'Time (day frame)': 'Translate.',
-  'Location & Direction': 'Translate.',
-  'Boy / Girl': 'Translate + give gender (both neuter).',
-  'Travel Phrases': 'Translate.',
-  'Days of the Week': 'Translate (all 7).',
-  'Numbers 1–10': 'Translate (all 10).',
-  'Greek-origin Loanwords': 'Translate; note the English cognate.',
+  'Sentence Use': 'Pick the matching Greek form.',
+  'Full Paradigm': 'Pick the correct 1st person form (full paradigm follows).',
+  'Tense Flip': 'Pick the matching present form.',
+  'Identify the Form': 'Pick the correct analysis.',
+  'Identify the Case': 'Pick the correct case.',
+  'Recognition + Gender': 'Pick the matching Greek noun.',
+  'Full Declension': 'Pick the correct singular form.',
+  'Singular → Plural': 'Pick the matching transformation.',
+  'Phrase Translation': 'Pick the correct Greek phrase.',
+  'Greeting + Reply': 'Pick the typical opener.',
+  'Situational': 'Pick what you would say.',
+  'Word + Example': 'Pick the matching Greek word.',
+  'Negation Example': 'Pick the correct negation.',
+  'Future Marker': 'Pick the correct future form.',
+  'Past Simple': 'Pick the correct aorist form.',
+  'Past Simple Example': 'Pick the correct past form.',
+  'Recognize': 'Pick the correct translation.',
+  'Modal / Infinitive Markers': 'Pick the correct marker.',
+  'Demonstratives': 'Pick the correct demonstrative.',
+  'Question Words': 'Pick the correct question word.',
+  'Yes / No / OK': 'Pick the correct word.',
+  'Time (relative)': 'Pick the correct time word.',
+  'Time (day frame)': 'Pick the correct day word.',
+  'Location & Direction': 'Pick the correct direction word.',
+  'Boy / Girl': 'Pick the matching Greek noun.',
+  'Travel Phrases': 'Pick the correct travel phrase.',
+  'Days of the Week': 'Pick the correct day name.',
+  'Numbers 1–10': 'Pick the correct number.',
+  'Greek-origin Loanwords': 'Pick the matching Greek word.',
 };
 
 function getInstruction(card) {
   const concept = card.concept || '';
-  // Try direct match on the part after "—"
   const m = concept.match(/—\s*(.+?)(?:\s*\(|$)/);
   const key = m ? m[1].trim() : '';
   if (INSTRUCTIONS[key]) return INSTRUCTIONS[key];
-  // Fuzzy: try matching any known instruction key as substring
   for (const k of Object.keys(INSTRUCTIONS)) {
     if (concept.includes(k)) return INSTRUCTIONS[k];
   }
-  if (card.category === 'alphabet') return 'Name letter + sound, or write Greek letter from name.';
-  return 'Read prompt → tap Reveal → compare.';
+  if (card.category === 'alphabet') return 'Pick the matching letter or name.';
+  return 'Pick the correct answer.';
 }
 
 function questionType(card) {
@@ -77,6 +83,11 @@ function questionType(card) {
 
 function lines(v) { return Array.isArray(v) ? v.join('\n') : (v || ''); }
 
+function coreAnswer(card, key) {
+  const v = card[key];
+  return Array.isArray(v) ? (v[0] || '') : (v || '');
+}
+
 function categoryLabel(id) {
   const c = state.categories.find(c => c.id === id);
   return c ? c.label : (id || '').replace(/_/g, ' ');
@@ -84,31 +95,148 @@ function categoryLabel(id) {
 
 const LABELS = { en: 'English', gr: 'Greek', phon: 'Phonetic' };
 
+// ----- stats -----
+function loadStats() {
+  return {
+    streak: parseInt(localStorage.getItem('gf.streak') || '0', 10),
+    best: parseInt(localStorage.getItem('gf.best') || '0', 10),
+    correct: parseInt(localStorage.getItem('gf.correct') || '0', 10),
+    total: parseInt(localStorage.getItem('gf.total') || '0', 10),
+  };
+}
+
+function saveStats() {
+  localStorage.setItem('gf.streak', state.stats.streak);
+  localStorage.setItem('gf.best', state.stats.best);
+  localStorage.setItem('gf.correct', state.stats.correct);
+  localStorage.setItem('gf.total', state.stats.total);
+}
+
+function renderStats() {
+  els.statStreak.textContent = state.stats.streak;
+  els.statBest.textContent = state.stats.best;
+  els.statScore.textContent = state.stats.correct + ' / ' + state.stats.total;
+  els.statStreak.classList.toggle('hot', state.stats.streak >= 5);
+}
+
+function recordAnswer(isCorrect) {
+  if (isCorrect) {
+    state.stats.streak++;
+    state.stats.correct++;
+    if (state.stats.streak > state.stats.best) state.stats.best = state.stats.streak;
+  } else {
+    state.stats.streak = 0;
+  }
+  state.stats.total++;
+  saveStats();
+  renderStats();
+}
+
+function resetStats() {
+  if (!confirm('Reset streak, best, and score?')) return;
+  state.stats = { streak: 0, best: 0, correct: 0, total: 0 };
+  saveStats();
+  renderStats();
+}
+
+// ----- multiple choice -----
+function buildOptions(card, answerKey, n = 4) {
+  const correct = coreAnswer(card, answerKey);
+  if (!correct) return { options: [], correct: '' };
+  const sameCat = state.all.filter(c => c.id !== card.id && c.category === card.category);
+  const allOthers = state.all.filter(c => c.id !== card.id);
+  const pool = sameCat.length >= n - 1 ? sameCat : allOthers;
+  const shuffled = pool.slice().sort(() => Math.random() - 0.5);
+  const distractors = [];
+  const seen = new Set([correct]);
+  for (const c of shuffled) {
+    if (distractors.length >= n - 1) break;
+    const t = coreAnswer(c, answerKey);
+    if (t && !seen.has(t)) { distractors.push(t); seen.add(t); }
+  }
+  const opts = [correct, ...distractors].sort(() => Math.random() - 0.5);
+  return { options: opts, correct };
+}
+
+function renderMC(card, answerKey) {
+  els.mcOptions.innerHTML = '';
+  els.feedback.classList.add('hidden');
+  els.feedback.textContent = '';
+  state.currentAnswered = false;
+
+  const { options, correct } = buildOptions(card, answerKey);
+  if (!options.length) return;
+
+  options.forEach(text => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'mc-option';
+    btn.textContent = text;
+    btn.addEventListener('click', () => onOptionClick(btn, text, correct));
+    els.mcOptions.appendChild(btn);
+  });
+}
+
+function onOptionClick(btn, picked, correct) {
+  if (state.currentAnswered) return;
+  state.currentAnswered = true;
+  const isCorrect = picked === correct;
+  recordAnswer(isCorrect);
+
+  [...els.mcOptions.children].forEach(b => {
+    b.classList.add('disabled');
+    if (b.textContent === correct) b.classList.add('correct');
+    if (b === btn && !isCorrect) b.classList.add('wrong');
+  });
+
+  els.feedback.textContent = isCorrect ? 'Correct.' : 'Wrong — correct answer highlighted.';
+  els.feedback.classList.remove('hidden');
+  els.feedback.classList.toggle('ok', isCorrect);
+  els.feedback.classList.toggle('bad', !isCorrect);
+
+  showAnswer();
+}
+
+function showAnswer() {
+  els.answerRow.classList.remove('hidden');
+}
+
+function revealWithoutScoring() {
+  if (state.currentAnswered) return;
+  state.currentAnswered = true;
+  [...els.mcOptions.children].forEach(b => b.classList.add('disabled'));
+  showAnswer();
+}
+
+// ----- render card -----
 function render() {
   const card = state.filtered[state.index];
   if (!card) {
     els.concept.textContent = 'No cards match this filter.';
     els.prompt.textContent = '';
+    els.mcOptions.innerHTML = '';
     els.answerBlocks.innerHTML = '';
-    els.revealBtn.classList.add('hidden');
     els.answerRow.classList.add('hidden');
+    els.feedback.classList.add('hidden');
     els.notesWrap.hidden = true;
     els.tags.innerHTML = '';
     els.cardIndex.textContent = '0';
     els.cardTotal.textContent = '0';
+    els.instructionsStrip.innerHTML = '<strong>Tip:</strong> Adjust filter.';
     return;
   }
 
   els.concept.textContent = card.concept || '';
-  els.instructionsStrip.innerHTML = '<strong>' + (questionType(card) || 'Tip') + ':</strong> ' + getInstruction(card);
+  els.instructionsStrip.innerHTML =
+    '<strong>' + (questionType(card) || 'Tip') + ':</strong> ' + getInstruction(card);
 
   const promptKey = state.direction === 'en-to-gr' ? 'en' : 'gr';
+  const answerKey = state.direction === 'en-to-gr' ? 'gr' : 'en';
   els.prompt.textContent = lines(card[promptKey]);
 
-  // Answer side: show the other formats, with labels + copy buttons
+  // Build full-answer blocks (revealed after answering)
   els.answerBlocks.innerHTML = '';
-  const answerKeys = ['en', 'gr', 'phon'].filter(k => k !== promptKey && card[k]);
-  answerKeys.forEach(k => {
+  ['en', 'gr', 'phon'].filter(k => k !== promptKey && card[k]).forEach(k => {
     const block = document.createElement('div');
     block.className = 'ans-block';
     const label = document.createElement('div');
@@ -130,11 +258,9 @@ function render() {
     block.appendChild(row);
     els.answerBlocks.appendChild(block);
   });
-
-  state.revealed = false;
   els.answerRow.classList.add('hidden');
-  els.revealBtn.classList.remove('hidden');
-  els.revealBtn.textContent = 'Tap to reveal answer';
+
+  renderMC(card, answerKey);
 
   if (card.notes) {
     els.notes.textContent = card.notes;
@@ -166,14 +292,8 @@ function render() {
 
   els.cardIndex.textContent = String(state.index + 1);
   els.cardTotal.textContent = String(state.filtered.length);
-}
-
-function reveal() {
-  state.revealed = !state.revealed;
-  els.answerRow.classList.toggle('hidden', !state.revealed);
-  els.revealBtn.textContent = state.revealed ? 'Hide answer' : 'Tap to reveal answer';
-  els.bottomRevealBtn.textContent = state.revealed ? 'Hide' : 'Reveal';
-  els.bottomRevealBtn.classList.toggle('revealed', state.revealed);
+  els.bottomRevealBtn.textContent = 'Reveal';
+  els.bottomRevealBtn.classList.remove('revealed');
 }
 
 function next() { if (state.filtered.length) { state.index = (state.index + 1) % state.filtered.length; render(); } }
@@ -227,7 +347,6 @@ document.addEventListener('click', e => {
   const btn = e.target.closest('.copy-btn');
   if (!btn) return;
   e.preventDefault(); e.stopPropagation();
-  // dynamic answer blocks store text in data attr; static buttons reference an element id
   let text = btn.dataset.copyText;
   if (!text) {
     const key = btn.dataset.copy;
@@ -256,24 +375,26 @@ async function load() {
   state.categories = data.categories || [];
   state.all = sortByCategoryAndType(data.cards || []);
   state.filtered = state.all.slice();
+  state.stats = loadStats();
   populateCategoryFilter();
+  renderStats();
   render();
 }
 
-els.revealBtn.addEventListener('click', reveal);
-els.prompt.addEventListener('click', reveal);
-els.bottomRevealBtn.addEventListener('click', reveal);
+els.revealBtn.addEventListener('click', revealWithoutScoring);
+els.bottomRevealBtn.addEventListener('click', revealWithoutScoring);
 els.nextBtn.addEventListener('click', next);
 els.prevBtn.addEventListener('click', prev);
 els.shuffleBtn.addEventListener('click', shuffle);
 els.dirToggle.addEventListener('click', toggleDirection);
 els.categoryFilter.addEventListener('change', e => applyCategoryFilter(e.target.value));
+els.resetStats.addEventListener('click', resetStats);
 
 document.addEventListener('keydown', e => {
   if (e.target.matches('input, textarea, select')) return;
   if (e.key === 'ArrowRight') next();
   else if (e.key === 'ArrowLeft') prev();
-  else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); reveal(); }
+  else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); revealWithoutScoring(); }
   else if (e.key.toLowerCase() === 'd') toggleDirection();
 });
 

@@ -17,6 +17,13 @@
 
   <div class="instructions-strip" id="instructionsStrip"><strong>Tip:</strong> Read prompt → tap Reveal → compare.</div>
 
+  <div class="stats-bar">
+    <span class="stat"><span class="stat-label">Streak</span><span class="stat-value" id="statStreak">0</span></span>
+    <span class="stat"><span class="stat-label">Best</span><span class="stat-value best" id="statBest">0</span></span>
+    <span class="stat"><span class="stat-label">Score</span><span class="stat-value" id="statScore">0 / 0</span></span>
+    <button class="reset-stats" id="resetStats" type="button" title="Reset all stats">Reset</button>
+  </div>
+
   <main class="card-stage">
     <section class="card" id="card" aria-live="polite">
       <div class="row concept-row">
@@ -29,7 +36,11 @@
         <button class="copy-btn" data-copy="prompt" type="button" aria-label="Copy prompt">Copy</button>
       </div>
 
-      <button class="reveal-btn" id="revealBtn" type="button">Tap to reveal answer</button>
+      <div class="mc-options" id="mcOptions"></div>
+
+      <div class="feedback hidden" id="feedback"></div>
+
+      <button class="reveal-btn hidden" id="revealBtn" type="button">Show answer (no score)</button>
 
       <div class="answer-row hidden" id="answerRow">
         <div id="answerBlocks"></div>

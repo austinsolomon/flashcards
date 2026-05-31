@@ -72,6 +72,77 @@ body {
 
 .instructions-strip strong { color: var(--accent); font-weight: 600; }
 
+.stats-bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--card);
+  border-bottom: 1px solid var(--card-edge);
+  font-size: 12px;
+}
+.stat { display: inline-flex; align-items: baseline; gap: 4px; }
+.stat-label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-size: 10px; }
+.stat-value { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; font-size: 14px; }
+.stat-value.best { color: var(--accent); }
+.stat-value.hot { color: var(--answer); }
+.reset-stats {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--card-edge);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 10px;
+  cursor: pointer;
+}
+.reset-stats:active { background: var(--copy-bg); }
+
+.mc-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+.mc-option {
+  text-align: left;
+  background: var(--card);
+  border: 1.5px solid var(--card-edge);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: clamp(13px, 3.4vw, 16px);
+  color: var(--text);
+  cursor: pointer;
+  white-space: pre-line;
+  line-height: 1.35;
+  transition: background 0.12s, border-color 0.12s;
+}
+.mc-option:active { transform: scale(0.99); }
+.mc-option.correct {
+  background: rgba(155,240,193,0.18);
+  border-color: var(--answer);
+  color: var(--answer);
+  font-weight: 600;
+}
+.mc-option.wrong {
+  background: rgba(255,100,100,0.15);
+  border-color: #ff6b6b;
+  color: #ff9090;
+}
+.mc-option.disabled { pointer-events: none; }
+.mc-option.disabled:not(.correct):not(.wrong) { opacity: 0.5; }
+
+.feedback {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px;
+  border-radius: 8px;
+}
+.feedback.ok { color: var(--answer); background: rgba(155,240,193,0.10); }
+.feedback.bad { color: #ff9090; background: rgba(255,100,100,0.10); }
+
 .card-stage {
   flex: 1 1 auto;
   min-height: 0;
