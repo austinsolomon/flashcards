@@ -110,18 +110,18 @@ function saveStats() {
   localStorage.setItem('gf.total', state.stats.total);
 }
 // Streak → difficulty tier. The single source of truth, shown in the
-// big Difficulty Meter under the stats bar.
+// big Difficulty Meter under the stats bar. 5 correct in a row per level.
 function targetDifficulty(streak) {
-  if (streak >= 8) return 5;
-  if (streak >= 6) return 4;
-  if (streak >= 4) return 3;
-  if (streak >= 2) return 2;
+  if (streak >= 20) return 5;
+  if (streak >= 15) return 4;
+  if (streak >= 10) return 3;
+  if (streak >= 5)  return 2;
   return 1;
 }
 // Streak at which the NEXT level kicks in (or null if at max).
 function streakForNextLevel(lvl) {
   if (lvl >= 5) return null;
-  return [null, 2, 4, 6, 8][lvl];
+  return [null, 5, 10, 15, 20][lvl];
 }
 
 let lastRenderedLevel = 1;
@@ -302,9 +302,18 @@ function makeHeartEl(p) {
 function spawnHeart() {
   const layer = document.getElementById('heartLayer');
   if (!layer) return;
+  // Confine hearts to the empty bands on EITHER SIDE of the bears so
+  // they never land in front of the bear/panda. In the 440x150 viewBox
+  // brown bear spans ~18-46% and panda spans ~53-81%, so we paint into
+  // 0-16% on the left and 84-100% on the right (with a little spill
+  // past the SVG bounds since the heart-layer overflows visible).
+  const side = Math.random() < 0.5 ? 'left' : 'right';
+  const xPct = side === 'left'
+    ? (-4 + Math.random() * 18)   // -4% .. 14%
+    : (86 + Math.random() * 18);  // 86% .. 104%
   const placement = {
-    left: (8 + Math.random() * 84) + '%',
-    top:  (15 + Math.random() * 65) + '%',
+    left: xPct + '%',
+    top:  (10 + Math.random() * 75) + '%',
     color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)],
     size: (16 + Math.random() * 18) + 'px',
     rot:  (Math.random() * 50 - 25) + 'deg',
