@@ -1,3 +1,5 @@
+const MASTERY_THRESHOLD = 2;
+
 const state = {
   all: [],            // all cards (sorted by category+difficulty)
   inFilter: [],       // all cards matching the current category filter (sorted by difficulty)
@@ -7,7 +9,7 @@ const state = {
   category: '',
   categories: [],
   stats: { streak: 0, best: 0, correct: 0, total: 0 },
-  mastered: new Set(),
+  correctCounts: {},  // {cardId: number of correct answers since last wrong}
   currentAnswered: false,
 };
 
@@ -103,13 +105,23 @@ function renderStats() {
   els.statScore.textContent = state.stats.correct + ' / ' + state.stats.total;
   els.statStreak.classList.toggle('hot', state.stats.streak >= 5);
 }
-function loadMastered() {
-  try { return new Set(JSON.parse(localStorage.getItem('gf.mastered') || '[]')); }
-  catch (e) { return new Set(); }
+function loadCounts() {
+  try {
+    const raw = localStorage.getItem('gf.correctCounts');
+    if (raw) return JSON.parse(raw);
+    // migrate from old gf.mastered key (each mastered card → MASTERY_THRESHOLD)
+    const old = JSON.parse(localStorage.getItem('gf.mastered') || '[]');
+    const out = {};
+    for (const id of old) out[id] = MASTERY_THRESHOLD;
+    if (old.length) localStorage.setItem('gf.correctCounts', JSON.stringify(out));
+    return out;
+  } catch (e) { return {}; }
 }
-function saveMastered() {
-  localStorage.setItem('gf.mastered', JSON.stringify([...state.mastered]));
+function saveCounts() {
+  localStorage.setItem('gf.correctCounts', JSON.stringify(state.correctCounts));
 }
+function isMastered(id) { return (state.correctCounts[id] || 0) >= MASTERY_THRESHOLD; }
+function getCount(id)   { return state.correctCounts[id] || 0; }
 
 function recordAnswer(isCorrect) {
   if (isCorrect) {
@@ -127,37 +139,52 @@ function recordAnswer(isCorrect) {
 function resetStats() {
   if (!confirm('Reset streak, best, score AND all mastery progress?')) return;
   state.stats = { streak: 0, best: 0, correct: 0, total: 0 };
-  state.mastered = new Set();
+  state.correctCounts = {};
   saveStats();
-  saveMastered();
+  saveCounts();
   renderStats();
   applyCategoryFilter(state.category);
 }
 
 // ---------- mastery ----------
-function markMastered(cardId) {
-  state.mastered.add(cardId);
-  saveMastered();
+function bumpCorrect(cardId) {
+  const cur = getCount(cardId);
+  const next = cur + 1;
+  state.correctCounts[cardId] = next;
+  saveCounts();
+  return { prev: cur, next, justMastered: cur < MASTERY_THRESHOLD && next >= MASTERY_THRESHOLD };
+}
+function resetCardCount(cardId) {
+  delete state.correctCounts[cardId];
+  saveCounts();
 }
 function demoteOneMastered(categoryId) {
-  // pick a random mastered card from the same category to un-master
-  const cands = state.inFilter.filter(c => state.mastered.has(c.id) && (!categoryId || c.category === categoryId));
+  // pick a random mastered card from the same category and reset its count
+  const cands = state.inFilter.filter(c => isMastered(c.id) && (!categoryId || c.category === categoryId));
   if (!cands.length) return null;
   const pick = cands[Math.floor(Math.random() * cands.length)];
-  state.mastered.delete(pick.id);
-  saveMastered();
+  resetCardCount(pick.id);
   return pick;
 }
 
 function rebuildActivePool(preserveIndex) {
   const before = state.filtered[state.index] && state.filtered[state.index].id;
-  state.filtered = state.inFilter.filter(c => !state.mastered.has(c.id));
+  state.filtered = state.inFilter.filter(c => !isMastered(c.id));
   if (preserveIndex && before) {
     const i = state.filtered.findIndex(c => c.id === before);
     state.index = i >= 0 ? i : 0;
   } else if (state.index >= state.filtered.length) {
     state.index = 0;
   }
+}
+
+// ---------- mascot kiss animation ----------
+function triggerKiss() {
+  const svg = document.querySelector('.mascot-svg');
+  if (!svg) return;
+  svg.classList.remove('kiss-fire');
+  void svg.offsetWidth; // force reflow so animation restarts cleanly on rapid retrigger
+  svg.classList.add('kiss-fire');
 }
 
 // ---------- multiple choice ----------
@@ -207,13 +234,23 @@ function onOptionClick(btn, picked, correct, card) {
     if (b === btn && !isCorrect) b.classList.add('wrong');
   });
 
-  let msg = isCorrect ? 'Correct.' : 'Wrong — correct answer highlighted.';
+  let msg;
   if (isCorrect) {
-    markMastered(card.id);
-    msg += '  ✩ Card mastered.';
+    triggerKiss();
+    const { next, justMastered } = bumpCorrect(card.id);
+    if (justMastered) {
+      msg = 'Correct! ✩ Card MASTERED. ✩';
+    } else if (next < MASTERY_THRESHOLD) {
+      const remaining = MASTERY_THRESHOLD - next;
+      msg = `Correct! (${remaining} more correct to master this card.)`;
+    } else {
+      msg = 'Correct!';
+    }
   } else {
+    resetCardCount(card.id);
+    msg = 'Wrong — correct answer highlighted. Card progress reset.';
     const demoted = demoteOneMastered(card.category);
-    if (demoted) msg += '  (Demoted "' + (demoted.concept || demoted.id) + '" back to the pool.)';
+    if (demoted) msg += `  (Demoted "${demoted.concept || demoted.id}" back to the pool.)`;
   }
 
   els.feedback.textContent = msg;
@@ -263,16 +300,16 @@ function showCompletion(allComplete) {
 function hideCompletion() { els.completeOverlay.classList.add('hidden'); }
 
 function restartCurrentCategory() {
-  // un-master all cards in current filter
-  state.inFilter.forEach(c => state.mastered.delete(c.id));
-  saveMastered();
+  // un-master all cards in current filter (reset their counts)
+  state.inFilter.forEach(c => { delete state.correctCounts[c.id]; });
+  saveCounts();
   hideCompletion();
   applyCategoryFilter(state.category);
 }
 
 function checkCompletion() {
   if (state.inFilter.length > 0 && state.filtered.length === 0) {
-    const allMastered = state.all.every(c => state.mastered.has(c.id));
+    const allMastered = state.all.every(c => isMastered(c.id));
     setTimeout(() => showCompletion(allMastered), 350);
   }
 }
@@ -280,7 +317,7 @@ function checkCompletion() {
 // ---------- render ----------
 function render() {
   const card = state.filtered[state.index];
-  const masteredCount = state.inFilter.filter(c => state.mastered.has(c.id)).length;
+  const masteredCount = state.inFilter.filter(c => isMastered(c.id)).length;
 
   if (!card) {
     if (state.inFilter.length > 0 && masteredCount === state.inFilter.length) {
@@ -357,6 +394,14 @@ function render() {
   masteryTag.className = 'tag tag-mastery';
   masteryTag.textContent = `${masteredCount}/${state.inFilter.length} mastered`;
   els.tags.appendChild(masteryTag);
+
+  const progress = getCount(card.id);
+  if (progress > 0 && progress < MASTERY_THRESHOLD) {
+    const p = document.createElement('span');
+    p.className = 'tag tag-progress';
+    p.textContent = `${progress}/${MASTERY_THRESHOLD} on this card`;
+    els.tags.appendChild(p);
+  }
   (card.tags || []).slice(0,3).forEach(t => {
     const s = document.createElement('span');
     s.className = 'tag';
@@ -396,7 +441,7 @@ function sortByDifficulty(cards) {
 function applyCategoryFilter(cat) {
   state.category = cat;
   state.inFilter = sortByDifficulty(cat ? state.all.filter(c => c.category === cat) : state.all.slice());
-  state.filtered = state.inFilter.filter(c => !state.mastered.has(c.id));
+  state.filtered = state.inFilter.filter(c => !isMastered(c.id));
   state.index = 0;
   hideCompletion();
   render();
@@ -446,7 +491,7 @@ async function load() {
   els.deckName.textContent = data.deck || 'Flashcards';
   state.categories = data.categories || [];
   state.all = sortByDifficulty(data.cards || []);
-  state.mastered = loadMastered();
+  state.correctCounts = loadCounts();
   state.stats = loadStats();
   populateCategoryFilter();
   renderStats();
