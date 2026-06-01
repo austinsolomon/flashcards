@@ -1,4 +1,4 @@
-const CACHE = 'greek-flashcards-v15';
+const CACHE = 'greek-flashcards-v16';
 const ASSETS = [
   './',
   'index.html',

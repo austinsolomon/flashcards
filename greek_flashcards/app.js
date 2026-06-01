@@ -14,6 +14,9 @@ const state = {
   currentCard: null,
   history: [],        // chronological list of cards shown
   historyIdx: -1,     // pointer into history
+  // mascot bookkeeping
+  heartPlacements: [],// {left, top, color, size, rot} kept until next wrong answer
+  kissCount: 0,       // increments on every correct answer; every 10 → profile kiss
 };
 
 const els = {
@@ -159,6 +162,8 @@ function resetStats() {
   if (!confirm('Reset streak, best, score AND all mastery progress?')) return;
   state.stats = { streak: 0, best: 0, correct: 0, total: 0 };
   state.correctCounts = {};
+  state.kissCount = 0;
+  clearHearts();
   saveStats();
   saveCounts();
   renderStats();
@@ -223,30 +228,64 @@ function pickNextCard() {
 }
 
 // ---------- mascot kiss animation ----------
-function triggerKiss() {
+function triggerKiss(profile) {
   const svg = document.querySelector('.mascot-svg');
   if (!svg) return;
-  svg.classList.remove('kiss-fire');
+  svg.classList.remove('kiss-fire', 'kiss-fire-profile');
   void svg.offsetWidth; // force reflow so animation restarts cleanly on rapid retrigger
-  svg.classList.add('kiss-fire');
+  svg.classList.add(profile ? 'kiss-fire-profile' : 'kiss-fire');
+  const cleanup = profile ? 'kiss-fire-profile' : 'kiss-fire';
+  // remove the class after the animation so it can re-trigger next time
+  setTimeout(() => svg.classList.remove(cleanup), profile ? 950 : 520);
 }
 
-// Spawn one randomly-placed, randomly-colored heart in the mascot stage
-// every time the user nails a correct answer.
+// Hearts are persistent — every correct answer adds one to the stage and
+// it stays in state.heartPlacements + the DOM until the user gets a
+// question WRONG (then all hearts clear together).
 const HEART_COLORS = ['#ff2d95','#ff6ec7','#ffe600','#c77dff','#00e1ff','#b6ff3a','#ff8a3d','#ffffff'];
-function spawnHeart() {
-  const layer = document.getElementById('heartLayer');
-  if (!layer) return;
+function makeHeartEl(p) {
   const h = document.createElement('div');
   h.className = 'heart-burst';
   h.textContent = '♥';
-  h.style.left = (8 + Math.random() * 84) + '%';
-  h.style.top  = (15 + Math.random() * 65) + '%';
-  h.style.color = HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)];
-  h.style.fontSize = (16 + Math.random() * 18) + 'px';
-  h.style.setProperty('--rot', (Math.random() * 50 - 25) + 'deg');
-  layer.appendChild(h);
-  setTimeout(() => h.remove(), 1500);
+  h.style.left = p.left;
+  h.style.top  = p.top;
+  h.style.color = p.color;
+  h.style.fontSize = p.size;
+  h.style.setProperty('--rot', p.rot);
+  return h;
+}
+function spawnHeart() {
+  const layer = document.getElementById('heartLayer');
+  if (!layer) return;
+  const placement = {
+    left: (8 + Math.random() * 84) + '%',
+    top:  (15 + Math.random() * 65) + '%',
+    color: HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)],
+    size: (16 + Math.random() * 18) + 'px',
+    rot:  (Math.random() * 50 - 25) + 'deg',
+  };
+  state.heartPlacements.push(placement);
+  layer.appendChild(makeHeartEl(placement));
+}
+function spawnHeartBurst(n) {
+  for (let i = 0; i < n; i++) spawnHeart();
+}
+function clearHearts() {
+  state.heartPlacements = [];
+  const layer = document.getElementById('heartLayer');
+  if (!layer) return;
+  // animate the existing hearts out, then remove
+  [...layer.children].forEach(h => {
+    h.classList.add('clearing');
+    setTimeout(() => h.remove(), 400);
+  });
+}
+// Re-paint heart layer from state (used when category changes etc.)
+function repaintHearts() {
+  const layer = document.getElementById('heartLayer');
+  if (!layer) return;
+  layer.innerHTML = '';
+  for (const p of state.heartPlacements) layer.appendChild(makeHeartEl(p));
 }
 
 // ---------- multiple choice ----------
@@ -298,8 +337,11 @@ function onOptionClick(btn, picked, correct, card) {
 
   let msg;
   if (isCorrect) {
-    triggerKiss();
+    state.kissCount++;
+    const isProfileKiss = (state.kissCount % 10 === 0);
+    triggerKiss(isProfileKiss);
     spawnHeart();
+    if (isProfileKiss) spawnHeartBurst(6); // bonus shower on every 10th
     const { next, justMastered } = bumpCorrect(card.id);
     if (justMastered) {
       msg = 'Correct! ✩ Card MASTERED. ✩';
@@ -311,7 +353,8 @@ function onOptionClick(btn, picked, correct, card) {
     }
   } else {
     resetCardCount(card.id);
-    msg = 'Wrong — correct answer highlighted. Card progress reset.';
+    clearHearts();
+    msg = 'Wrong — hearts cleared. Card progress reset.';
     const demoted = demoteOneMastered(card.category);
     if (demoted) msg += `  (Demoted "${demoted.concept || demoted.id}" back to the pool.)`;
   }
