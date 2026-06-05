@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#ff2d95" />
+  <meta name="description" content="A Y2K candy-maximalist flashcard quiz through world history." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>History Crush — Flashcards</title>
+</head>
+<body>
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="title-wrap">
+      <h1 class="app-title">HISTORY <span>CRUSH</span></h1>
+      <div class="cat-tabs" id="catTabs" role="tablist" aria-label="Categories"></div>
+    </div>
+  </header>
+
+  <!-- INSTRUCTIONS STRIP -->
+  <div class="strip" id="instructions" aria-live="polite">Loading deck…</div>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-chip" id="streakChip"><span class="stat-k">Streak</span><span class="stat-v" id="statStreak">0</span></div>
+    <div class="stat-chip"><span class="stat-k">Best</span><span class="stat-v" id="statBest">0</span></div>
+    <div class="stat-chip"><span class="stat-k">Score</span><span class="stat-v" id="statScore">0/0</span></div>
+    <button class="reset-btn" id="resetBtn" type="button">Reset</button>
+  </div>
+
+  <!-- DIFFICULTY METER (its own element, under the stats bar) -->
+  <div class="diff-meter" id="diffMeter">
+    <div class="dm-badge" id="dmBadge">L1</div>
+    <div class="dm-mid">
+      <div class="dm-dots" id="dmDots" aria-hidden="true"></div>
+      <div class="dm-hint" id="dmHint">5 more in a row → L2</div>
+    </div>
+    <div class="dm-label">DIFFICULTY<br>METER</div>
+  </div>
+
+  <!-- CARD STAGE (scrollable middle) -->
+  <main class="stage" id="stage">
+    <section class="card" id="card">
+      <div class="card-head">
+        <span class="card-concept" id="cardConcept">—</span>
+        <span class="card-stars" id="cardStars" title="Card difficulty">★</span>
+      </div>
+      <div class="card-prompt" id="cardPrompt">—</div>
+
+      <div class="options" id="options"></div>
+
+      <div class="answer-block" id="answerBlock" hidden>
+        <div class="ab-row"><span class="ab-tag">A</span><span id="abA">—</span></div>
+        <div class="ab-row"><span class="ab-tag b">B</span><span id="abB">—</span></div>
+        <div class="ab-notes" id="abNotes">—</div>
+      </div>
+
+      <div class="tags-row" id="tagsRow"></div>
+    </section>
+  </main>
+
+  <!-- MASCOT FOOTER -->
+  <footer class="mascot-footer">
+    <div class="mascot-stage" id="mascotStage">
+      <div class="heart-layer" id="heartLayer" aria-hidden="true"></div>
+      <svg class="mascots" id="mascots" viewBox="0 0 320 150" aria-hidden="true">
+        <!-- LEFT mascot: Owl scholar -->
+        <g class="m-left" id="mLeft">
+          <ellipse cx="70" cy="135" rx="42" ry="9" fill="rgba(42,10,58,.18)"/>
+          <path d="M40 70 q-14 -6 -10 -26 q10 10 14 12 z" fill="#9d4edd"/>
+          <path d="M100 70 q14 -6 10 -26 q-10 10 -14 12 z" fill="#9d4edd"/>
+          <ellipse cx="70" cy="86" rx="38" ry="44" fill="#9d4edd"/>
+          <ellipse cx="70" cy="92" rx="27" ry="33" fill="#c79cf0"/>
+          <circle class="cheek-left" id="cheekL" cx="50" cy="100" r="8" fill="#ffe600"/>
+          <circle cx="90" cy="100" r="8" fill="#ffd0e8"/>
+          <circle cx="58" cy="80" r="13" fill="#fff"/>
+          <circle cx="82" cy="80" r="13" fill="#fff"/>
+          <circle cx="58" cy="80" r="6" fill="#2a0a3a"/>
+          <circle cx="82" cy="80" r="6" fill="#2a0a3a"/>
+          <path d="M64 90 l6 8 l6 -8 z" fill="#ffe600"/>
+          <path d="M52 124 l-8 14 M88 124 l8 14" stroke="#ffe600" stroke-width="5" stroke-linecap="round"/>
+        </g>
+        <!-- RIGHT mascot: front-facing scroll-bird (eagle) -->
+        <g class="m-right" id="mRight">
+          <ellipse cx="250" cy="135" rx="42" ry="9" fill="rgba(42,10,58,.18)"/>
+          <ellipse cx="250" cy="86" rx="36" ry="42" fill="#ff2d95"/>
+          <ellipse cx="250" cy="94" rx="25" ry="30" fill="#ff86c2"/>
+          <circle cx="238" cy="80" r="12" fill="#fff"/>
+          <circle cx="262" cy="80" r="12" fill="#fff"/>
+          <circle cx="238" cy="80" r="6" fill="#2a0a3a"/>
+          <circle cx="262" cy="80" r="6" fill="#2a0a3a"/>
+          <path d="M244 92 l6 7 l6 -7 z" fill="#ffe600"/>
+          <circle cx="222" cy="100" r="7" fill="#ffd0e8"/>
+          <circle cx="278" cy="100" r="7" fill="#ffe600"/>
+          <path d="M250 48 q-6 -14 6 -20 q4 12 -2 20 z" fill="#ffe600"/>
+        </g>
+        <!-- RIGHT mascot: SIDE PROFILE (shown every 10th correct) -->
+        <g class="m-right-profile" id="mRightProfile" style="display:none">
+          <ellipse cx="250" cy="135" rx="42" ry="9" fill="rgba(42,10,58,.18)"/>
+          <ellipse cx="252" cy="86" rx="34" ry="42" fill="#ff2d95"/>
+          <path d="M224 86 q-22 0 -30 8 q14 6 30 6 z" fill="#ff86c2"/>
+          <path d="M218 92 l-16 2 l16 6 z" fill="#ffe600"/>
+          <circle cx="242" cy="78" r="11" fill="#fff"/>
+          <circle cx="240" cy="78" r="6" fill="#2a0a3a"/>
+          <circle cx="252" cy="98" r="7" fill="#ffe600"/>
+          <path d="M256 50 q-8 -12 4 -20 q6 12 0 20 z" fill="#ffe600"/>
+          <path d="M276 86 q14 4 20 14 q-16 2 -22 -6 z" fill="#9d4edd"/>
+        </g>
+      </svg>
+    </div>
+    <div class="marquee"><div class="marquee-track" id="marqueeTrack"></div></div>
+  </footer>
+
+  <!-- BOTTOM NAV (thumb zone) -->
+  <nav class="thumb-nav">
+    <button class="nav-btn" id="prevBtn" type="button">‹ Prev</button>
+    <button class="nav-btn reveal" id="revealBtn" type="button">Reveal</button>
+    <button class="nav-btn" id="shuffleBtn" type="button">Shuffle</button>
+    <button class="nav-btn dir" id="dirBtn" type="button">A→B</button>
+    <button class="nav-btn primary" id="nextBtn" type="button">Next ›</button>
+  </nav>
+
+  <!-- CATEGORY COMPLETE OVERLAY -->
+  <div class="overlay" id="completeOverlay" hidden>
+    <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
+    <div class="overlay-card">
+      <h2 class="complete-title">CATEGORY COMPLETE!</h2>
+      <p class="complete-sub" id="completeSub">You mastered all the cards!</p>
+      <button class="restart-btn" id="restartCatBtn" type="button">Restart this category</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
