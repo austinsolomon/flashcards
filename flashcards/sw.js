@@ -1,5 +1,5 @@
 /* History Crush — service worker */
-const CACHE = 'history-flashcards-v1';
+const CACHE = 'history-flashcards-v2';
 const STATIC_ASSETS = [
   './',
   './index.html',
