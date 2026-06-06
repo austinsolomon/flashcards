@@ -27,13 +27,16 @@ const CAT_LABEL = {
    Pure logic (also imported by verify.js — keep identical)
    =========================================================== */
 
-/** Order cards strictly chronologically: year, then difficulty, then id.
-    Omit catId (or pass null) for the full cross-category timeline. */
+/** Order cards for the run: the zoomed-out "why/what" Origins on-ramp first,
+    then strictly chronological — so each idea's motivation is answered before
+    we zoom into the mechanism (and its 3D demo). */
 function buildSequence(cards, catId){
+  const phase = c => c.category === "origins" ? 0 : 1;
   return cards
     .filter(c => !catId || c.category === catId)
     .slice()
     .sort((a, b) =>
+      (phase(a) - phase(b)) ||
       (a.year - b.year) ||
       (a.difficulty - b.difficulty) ||
       a.id.localeCompare(b.id));
@@ -68,7 +71,7 @@ function buildOptions(card, pool, direction, rnd){
 
 if (typeof module !== "undefined" && module.exports){
   module.exports = { buildSequence, buildOptions, vizFor,
-    get DIAGRAMS(){ return DIAGRAMS; } };
+    get DIAGRAMS(){ return DIAGRAMS; }, get scene3dFor(){ return scene3dFor; } };
 }
 
 /* ===========================================================
@@ -412,8 +415,8 @@ function drawBoxWire(ctx,verts,a,col){ const pv=verts.map(p=>proj3(p,a)); ctx.st
 function mount3D(host, sceneFn){
   host.innerHTML = '<canvas class="viz3d"></canvas><button class="viz3d-badge" type="button" aria-label="Play animation">3D ▶</button>';
   const cv = host.querySelector("canvas"), badge = host.querySelector(".viz3d-badge"), ctx = cv.getContext("2d");
-  let W=0, H=108, dpr=1, raf=0, playing=false, t0=0;
-  const a = { angX:-0.30, angY:0.5, focal:5.2, sw:1, cx:0, cy:0 };   // fixed angle — no auto-rotate
+  let W=0, H=128, dpr=1, raf=0, playing=false, t0=0;
+  const a = { angX:-0.28, angY:0.5, focal:5.4, sw:1, cx:0, cy:0 };   // fixed angle — no auto-rotate
   const scene = sceneFn();
   function resize(){
     dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -421,7 +424,7 @@ function mount3D(host, sceneFn){
     cv.style.width = "100%"; cv.style.height = H + "px";
     cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
     ctx.setTransform(dpr,0,0,dpr,0,0);
-    a.cx = W/2; a.cy = H/2; a.sw = Math.min(W*0.16, 46);
+    a.cx = W/2; a.cy = H/2; a.sw = Math.min(W*0.145, 40);
   }
   const DUR = 2600;
   function paint(dt, active){ ctx.clearRect(0,0,W,H); scene(ctx, a, dt, W, H, active); }
@@ -445,8 +448,8 @@ function sceneNeuron(){
   const X = [0.70, -0.40, 0.90], Wt = [0.80, 0.50, -0.30], bias = 0.20;
   const total = bias + X.reduce((s,v,i)=>s+v*Wt[i], 0);
   const sigmoid = z => 1/(1+Math.exp(-z));
-  const inputs = [[-2.4,0.9,0],[-2.4,0,0],[-2.4,-0.9,0]];
-  const neuron = [0,0,0], output = [2.5,0,0];
+  const inputs = [[-2.4,0.72,0],[-2.4,0,0],[-2.4,-0.72,0]];
+  const neuron = [0,0,0], output = [2.4,0,0];
   return (ctx,a,dt,W,H,active)=>{
     const p = active ? Math.min(1, dt/2400) : 1;
     const N = proj3(neuron,a), O = proj3(output,a);
@@ -480,9 +483,9 @@ function sceneNeuron(){
 
 /* --- scene: a small network passing a signal through its layers --- */
 function sceneMLP(){
-  const L0=[[-2.2,0.9,0],[-2.2,0,0],[-2.2,-0.9,0]];
-  const L1=[[0,1.25,0],[0,0.42,0],[0,-0.42,0],[0,-1.25,0]];
-  const L2=[[2.2,0.6,0],[2.2,-0.6,0]];
+  const L0=[[-2.2,0.8,0],[-2.2,0,0],[-2.2,-0.8,0]];
+  const L1=[[0,1.0,0],[0,0.34,0],[0,-0.34,0],[0,-1.0,0]];
+  const L2=[[2.2,0.5,0],[2.2,-0.5,0]];
   const layers=[L0,L1,L2];
   return (ctx,a,dt,W,H,active)=>{
     L0.forEach(p=>L1.forEach(q=>v3line(ctx,proj3(p,a),proj3(q,a),"rgba(120,140,170,.32)",0.7)));
