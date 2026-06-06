@@ -9,11 +9,12 @@ let fail = 0;
 const ok  = m => console.log("  ✓ " + m);
 const bad = m => { console.log("  ✗ " + m); fail++; };
 
-const CATS = ["foundations","vision_sequence","representations","transformers_llms"];
+const CATS = ["origins","foundations","vision_sequence","representations","transformers_llms"];
 const VIZ = ["perceptron","mlp","activation","gradient","cnn","rnn","lstm","seq2seq",
              "attention","embedding","vectordb","rag","transformer","scaling","rlhf",
              "agent","tokens","network",
-             "supervised","clustering","overfit","dropout","softmax","trainloop","rl"];
+             "supervised","clustering","overfit","dropout","softmax","trainloop","rl",
+             "arc","compute"];
 const cards = JSON.parse(fs.readFileSync(path.join(__dirname, "cards.json"), "utf8"));
 
 /* 1) schema + integrity ------------------------------------------------ */

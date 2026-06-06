@@ -17,6 +17,12 @@ const CATEGORIES = [
 
 const LS_STATE = "nn.state";
 
+/* era label shown on the card (never the specific term — that's the answer) */
+const CAT_LABEL = {
+  origins:"Origins", foundations:"Foundations", vision_sequence:"Vision & Sequence",
+  representations:"Representations", transformers_llms:"Transformers & LLMs",
+};
+
 /* ===========================================================
    Pure logic (also imported by verify.js — keep identical)
    =========================================================== */
@@ -320,6 +326,24 @@ const DIAGRAMS = {
     s += T(160,14,"reinforcement learning loop",7,P.m);
     return svg(s);
   },
+  arc(){
+    const box=(x,w,t,col)=>RT(x,36,w,24,"none",col,5)+T(x+w/2,52,t,7.5,P.i);
+    let s = box(8,52,"rules",P.m)+L(60,48,72,48,P.m,1,true)
+          + box(74,42,"ML",P.c)+L(116,48,128,48,P.m,1,true)
+          + box(130,74,"deep learning",P.v)+L(204,48,216,48,P.m,1,true)
+          + box(218,52,"LLMs",P.c);
+    s += T(160,20,"the arc of this deck",7,P.m);
+    s += T(160,86,"hand-coded → learned → many layers → language",7,P.m);
+    return svg(s);
+  },
+  compute(){
+    let s = T(160,16,"what can be computed, step by step",7,P.m);
+    s += T(42,52,"1011",9,P.c)+L(66,48,98,48,P.m,1,true);
+    s += RT(100,33,118,32,"rgba(139,123,255,.12)",P.v,6)+T(159,53,"computation",8,P.i);
+    s += L(220,48,252,48,P.m,1,true)+T(278,52,"0110",9,P.c);
+    s += T(160,86,"algorithms · logic · the Turing machine",7,P.m);
+    return svg(s);
+  },
   network(){ return DIAGRAMS.mlp(); },
 };
 
@@ -327,6 +351,8 @@ const DIAGRAMS = {
 function vizFor(card){
   const t = (card.concept + " " + (card.b[0]||"") + " " + (card.tags||[]).join(" ")).toLowerCase();
   const rules = [
+    [/turing|computation|computer science|computable/, "compute"],
+    [/pattern recognition/, "supervised"],
     [/unsupervised|clustering|\bcluster\b|k-means/, "clustering"],
     [/supervised/, "supervised"],
     [/dropout/, "dropout"],
@@ -353,12 +379,114 @@ function vizFor(card){
     [/mlp|multilayer|hidden layer|backprop|feedforward|credit assignment/, "mlp"],
   ];
   for (const [re, type] of rules) if (re.test(t)) return type;
-  return { foundations:"mlp", vision_sequence:"cnn", representations:"embedding", transformers_llms:"transformer" }[card.category] || "network";
+  return { origins:"arc", foundations:"mlp", vision_sequence:"cnn", representations:"embedding", transformers_llms:"transformer" }[card.category] || "network";
 }
+
+/* ===========================================================
+   Per-card 3D diagrams (canvas 2D wireframe, neon, animated)
+   ~25%+ of cards render live in 3D; the rest use the SVGs above.
+   =========================================================== */
+let vizCtl = null;
+function stopViz3D(){ if (vizCtl){ vizCtl.stop(); vizCtl = null; } }
+
+const BOX_E = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+function boxVerts(X,Y,Z,sx,sy,sz){
+  const x0=X-sx/2,x1=X+sx/2,y0=Y-sy/2,y1=Y+sy/2,z0=Z-sz/2,z1=Z+sz/2;
+  return [[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]];
+}
+function proj3(p, a){
+  const [x,y,z] = p;
+  const cX=Math.cos(a.angX), sX=Math.sin(a.angX);
+  const y2 = y*cX - z*sX, z2 = y*sX + z*cX;
+  const cY=Math.cos(a.angY), sY=Math.sin(a.angY);
+  const x2 = x*cY + z2*sY, z3 = -x*sY + z2*cY;
+  const s = a.focal / (a.focal - z3);
+  return [a.cx + x2*a.sw*s, a.cy - y2*a.sw*s, z3];
+}
+const v3line = (ctx,A,B,st,w)=>{ ctx.beginPath(); ctx.moveTo(A[0],A[1]); ctx.lineTo(B[0],B[1]); ctx.strokeStyle=st; ctx.lineWidth=w||1; ctx.stroke(); };
+const v3node = (ctx,P,r,fill,stroke)=>{ ctx.beginPath(); ctx.arc(P[0],P[1],r,0,6.2832); if(fill){ctx.fillStyle=fill;ctx.fill();} if(stroke){ctx.lineWidth=1.5;ctx.strokeStyle=stroke;ctx.stroke();} };
+const v3lerp = (A,B,t)=>[A[0]+(B[0]-A[0])*t, A[1]+(B[1]-A[1])*t];
+const v3txt = (ctx,x,y,s,col,al,sz)=>{ ctx.fillStyle=col||"rgba(205,215,230,.95)"; ctx.font=`${sz||9}px 'JetBrains Mono', monospace`; ctx.textAlign=al||"center"; ctx.fillText(s,x,y); };
+function drawBoxWire(ctx,verts,a,col){ const pv=verts.map(p=>proj3(p,a)); ctx.strokeStyle=col; ctx.lineWidth=1.1; ctx.beginPath(); BOX_E.forEach(([i,j])=>{ctx.moveTo(pv[i][0],pv[i][1]);ctx.lineTo(pv[j][0],pv[j][1]);}); ctx.stroke(); }
+
+function mount3D(host, sceneFn){
+  host.innerHTML = '<canvas class="viz3d"></canvas>';
+  const cv = host.firstChild, ctx = cv.getContext("2d");
+  let W=0, H=108, dpr=1, raf=0;
+  const a = { angX:-0.32, angY:0.55, focal:5.2, sw:1, cx:0, cy:0 };
+  function resize(){
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = host.clientWidth || 300;
+    cv.style.width = "100%"; cv.style.height = H + "px";
+    cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    a.cx = W/2; a.cy = H/2; a.sw = Math.min(W*0.16, 46);
+  }
+  const scene = sceneFn();
+  const t0 = performance.now();
+  function frame(){
+    a.angY += 0.006;
+    ctx.clearRect(0,0,W,H);
+    scene(ctx, a, performance.now()-t0, W, H);
+    raf = requestAnimationFrame(frame);
+  }
+  resize(); window.addEventListener("resize", resize); frame();
+  return { stop(){ cancelAnimationFrame(raf); window.removeEventListener("resize", resize); } };
+}
+
+/* --- scenes --- */
+function scenePerceptron(){
+  const inputs = [[-2.4,0.85,0],[-2.4,0,0],[-2.4,-0.85,0]];
+  const neuron = [0,0,0], output = [2.4,0,0];
+  return (ctx,a,t,W,H)=>{
+    const N = proj3(neuron,a), O = proj3(output,a);
+    const vals = inputs.map((_,i)=> Math.sin(t/950 + i*2.1)*0.9 );
+    inputs.forEach(p => v3line(ctx, proj3(p,a), N, "rgba(120,140,170,.5)", 1));
+    v3line(ctx, N, O, "rgba(120,140,170,.5)", 1);
+    const ph = (t % 1500) / 1500;                       // signal pulse
+    inputs.forEach(p => v3node(ctx, v3lerp(proj3(p,a), N, ph), 3, "#5cd6ef"));
+    v3node(ctx, v3lerp(N, O, ph), 3, "#8b7bff");
+    inputs.forEach((p,i)=>{ const P=proj3(p,a); v3node(ctx,P,6,"#5cd6ef"); v3txt(ctx,P[0]-16,P[1]+3, vals[i].toFixed(2), "rgba(138,152,173,.95)","end",9); });
+    v3node(ctx, N, 13, "rgba(139,123,255,.18)", "#8b7bff"); v3txt(ctx, N[0], N[1]+4, "Σƒ", "#cdd7e6","center",11);
+    const sum = vals.reduce((s,v)=>s+v,0), out = 1/(1+Math.exp(-sum));
+    v3node(ctx, O, 7, null, "#8b7bff"); v3txt(ctx, O[0]+16, O[1]+3, out.toFixed(2), "#5cd6ef","start",10);
+    v3txt(ctx, a.cx, H-6, "one neuron · weighted sum → activation", "rgba(138,152,173,.9)","center",9);
+  };
+}
+function sceneMLP(){
+  const L0=[[-2.2,0.9,0],[-2.2,0,0],[-2.2,-0.9,0]];
+  const L1=[[0,1.25,0],[0,0.42,0],[0,-0.42,0],[0,-1.25,0]];
+  const L2=[[2.2,0.6,0],[2.2,-0.6,0]];
+  const layers=[L0,L1,L2];
+  return (ctx,a,t,W,H)=>{
+    L0.forEach(p=>L1.forEach(q=>v3line(ctx,proj3(p,a),proj3(q,a),"rgba(120,140,170,.32)",0.7)));
+    L1.forEach(p=>L2.forEach(q=>v3line(ctx,proj3(p,a),proj3(q,a),"rgba(120,140,170,.32)",0.7)));
+    const ph=(t%2400)/2400;
+    layers.forEach((Lr,li)=>{ const active = ph>=li/3 && ph<(li+1)/3;
+      Lr.forEach(p=>{ const P=proj3(p,a); v3node(ctx,P,6, li===1?"#8b7bff":"#5cd6ef"); if(active) v3node(ctx,P,9,null,"#ffffff"); });
+    });
+    v3txt(ctx, a.cx, H-6, "signal propagates layer → layer", "rgba(138,152,173,.9)","center",9);
+  };
+}
+function sceneTransformer(){
+  const slabs=[]; for(let i=0;i<5;i++) slabs.push(-0.95+i*0.46);
+  return (ctx,a,t,W,H)=>{
+    slabs.forEach(X=> drawBoxWire(ctx, boxVerts(X,0,0,0.3,1.45,1.15), a, "#8b7bff"));
+    const ph=(t%2600)/2600, px=-1.15+ph*2.3;
+    v3node(ctx, proj3([px,0,0],a), 4, "#5cd6ef");
+    v3txt(ctx, a.cx, H-6, "transformer blocks × N", "rgba(138,152,173,.9)","center",9);
+  };
+}
+const VIZ3D = { perceptron: scenePerceptron, mlp: sceneMLP, network: sceneMLP, transformer: sceneTransformer };
 
 function renderViz(card){
   if (!HAS_DOM) return;
+  stopViz3D();
   const type = vizFor(card);
+  if (VIZ3D[type]){
+    try { vizCtl = mount3D(el.viz, VIZ3D[type]); return; }
+    catch(e){ /* fall back to SVG */ }
+  }
   el.viz.innerHTML = (DIAGRAMS[type] || DIAGRAMS.network)();
 }
 
@@ -476,7 +604,7 @@ function renderCard(){
   state.answered = false;
   state.pending = null;
 
-  el.cardConcept.innerHTML = `${card.concept} ${stars(card.difficulty)}`;
+  el.cardConcept.innerHTML = `${CAT_LABEL[card.category] || ""} ${stars(card.difficulty)}`;
   el.cardYear.textContent = card.year;
   renderTimeline(card);
   renderViz(card);
@@ -616,6 +744,7 @@ function resetAll(){
 let introCtl = null;
 
 function enterIntro(){
+  stopViz3D();
   state.mode = "intro";
   document.body.classList.add("is-intro");
   el.intro.hidden = false; el.card.hidden = true;

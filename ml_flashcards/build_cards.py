@@ -11,6 +11,8 @@ Each tuple: (difficulty, headline, prompt_a, answer_b, notes, [tags], year)
 import json, re
 
 CATEGORIES = [
+    {"id": "origins",          "label": "Origins",
+     "instruction": "The big picture: why AI & ML exist"},
     {"id": "foundations",      "label": "Foundations",
      "instruction": "From ML basics to deep neural nets"},
     {"id": "vision_sequence",  "label": "Vision & Sequence",
@@ -22,6 +24,21 @@ CATEGORIES = [
 ]
 
 DECK = {
+
+# =====================================================================
+# ORIGINS — zoomed all the way out: the big picture before neural nets.
+"origins": [
+(1,"Origins — What computing was about","Before AI, this field was about automating calculation and logic — figuring out what can be computed, step by step, and how fast.","Computation & Algorithms","Early computer science (1930s–50s) centered on computability and algorithms; 'learning' from data was not yet the goal.",["bigpicture","history"],1936),
+(1,"Origins — A model of computation","Alan Turing's 1936 abstract machine that defined precisely what it means for a problem to be 'computable'.","The Turing Machine","A tape + rules thought-experiment; it underpins all of computer science and framed what machines could, in principle, do.",["bigpicture","history"],1936),
+(2,"Origins — Can machines think?","Turing's 1950 proposal to sidestep that question by testing whether a machine's conversation is indistinguishable from a human's.","The Turing Test","From 'Computing Machinery and Intelligence' (1950); it reframed 'intelligence' as observable behavior.",["bigpicture","history"],1950),
+(1,"Origins — The field gets a name","The 1956 summer workshop that coined 'artificial intelligence' and set the goal of making machines simulate intelligence.","The Dartmouth Workshop","Organized by McCarthy, Minsky, Shannon and Rochester; the official birth of AI as a discipline.",["bigpicture","history"],1956),
+(2,"Origins — The first approach to AI","Early AI's dominant strategy: hand-encode human knowledge as explicit logic rules and symbols ('good old-fashioned AI').","Symbolic AI (GOFAI)","Dominated 1956–1980s; powerful for logic and games but brittle on messy, real-world perception.",["bigpicture","history"],1958),
+(2,"Origins — Why rules weren't enough","The core limitation that motivated machine learning: many tasks (recognizing a cat, understanding speech) are impossible to spell out as explicit rules.","You can't hand-code every rule","This 'knowledge bottleneck' is exactly the problem ML was created to solve — let the machine infer the rules from examples.",["bigpicture","why"],1969),
+(1,"Origins — The problem ML solves","The discipline born to attack that problem: instead of programming the rules, let the computer learn patterns from examples.","Learning from data","Machine learning trades hand-written rules for data + a learning algorithm; the central shift this whole deck traces.",["bigpicture","why"],1959),
+(2,"Origins — First machine that learned","Arthur Samuel's 1959 checkers program that improved by playing itself — an early, famous demonstration of a machine learning from experience.","Samuel's checkers program","Samuel coined 'machine learning' (1959); the program got better with practice, no extra programming.",["bigpicture","history"],1959),
+(1,"Origins — The first practical ML task","The earliest big real-world ML problem: sorting inputs into categories, like reading handwritten digits or telling cats from dogs.","Pattern recognition","Classification of perceptual data was the proving ground for early neural nets and remains a core ML task.",["bigpicture","why"],1957),
+(2,"Origins — The whole arc","The overall journey this deck follows, from the earliest idea to today's systems.","Rules → ML → Deep Learning → LLMs","Hand-coded rules gave way to learning from data, then to many-layered networks, then to large language models.",["bigpicture","roadmap"],1950),
+],
 
 # =====================================================================
 "foundations": [
@@ -287,7 +304,7 @@ def slug(s):
     s = re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
     return s[:40]
 
-SHORT = {"foundations":"fnd","vision_sequence":"vsq","representations":"rep","transformers_llms":"llm"}
+SHORT = {"origins":"org","foundations":"fnd","vision_sequence":"vsq","representations":"rep","transformers_llms":"llm"}
 
 def main():
     cards = []
