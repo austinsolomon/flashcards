@@ -23,6 +23,7 @@
 }
 
 *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+[hidden]{ display:none !important; }   /* make the hidden attr win over display:flex etc. */
 
 html,body{ height:100%; margin:0; }
 

@@ -504,7 +504,9 @@ const state = {
   correct: 0, total: 0,
   minYear: 1940, maxYear: 2025,
   mode: "intro",                // "intro" (3D overview) | "deck"
+  autoTimer: null,              // pending auto-advance after a correct answer
 };
+function clearAuto(){ if (state.autoTimer){ clearTimeout(state.autoTimer); state.autoTimer = null; } }
 
 function loadState(){
   try{
@@ -647,6 +649,7 @@ function revealAnswerBlock(correctText){
    =========================================================== */
 function onAnswer(btn, isCorrect, correctText){
   if (state.answered) return;
+  clearAuto();
   state.answered = true;
   state.total++;
   [...el.options.children].forEach(b => b.classList.add("locked"));
@@ -657,17 +660,20 @@ function onAnswer(btn, isCorrect, correctText){
     state.streak = state.index + 1;                  // cleared this many in a row
     if (state.streak > state.best){ state.best = state.streak; flashMeter("up"); }
     state.pending = (state.index + 1 >= state.seq.length) ? "finish" : "advance";
+    saveState(); renderStats(); setNextLabel();
+    // auto-advance on correct — no Next click needed (brief green flash first)
+    state.autoTimer = setTimeout(() => {
+      if (state.pending === "finish") showComplete();
+      else goTo(state.index + 1);
+    }, 650);
   } else {
     btn.classList.add("wrong");
     state.streak = 0;
     state.pending = "restart";
     flashMeter("down");
+    revealAnswerBlock(correctText);                  // show the right answer to learn from
+    saveState(); renderStats(); setNextLabel();
   }
-
-  revealAnswerBlock(correctText);
-  saveState();
-  renderStats();
-  setNextLabel();
 }
 
 /* reveal without scoring — does NOT consume the attempt */
@@ -684,12 +690,14 @@ function onReveal(){
    Navigation
    =========================================================== */
 function goTo(idx){
+  clearAuto();
   state.index = Math.max(0, Math.min(state.seq.length - 1, idx));
   renderCard();
 }
 
 function nextAction(){
   if (state.mode === "intro"){ exitIntroToDeck(); return; }
+  clearAuto();
   if (!state.answered){
     // nudge the learner to answer first
     el.options.classList.remove("nudge"); void el.options.offsetWidth; el.options.classList.add("nudge");
@@ -745,6 +753,7 @@ let introCtl = null;
 
 function enterIntro(){
   stopViz3D();
+  clearAuto();
   state.mode = "intro";
   document.body.classList.add("is-intro");
   el.intro.hidden = false; el.card.hidden = true;
