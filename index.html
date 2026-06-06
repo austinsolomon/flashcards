@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0e16" />
+  <title>Flashcards · Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root{
+      --bg:#0a0e16; --surface:#121a29; --surface-2:#0f1626;
+      --line:#1e2940; --ink:#e8eef6; --muted:#8a98ad; --faint:#5d6b82;
+      --accent:#5cd6ef; --accent-2:#8b7bff;
+    }
+    *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html,body{ margin:0; min-height:100%; }
+    body{
+      background:
+        radial-gradient(1200px 600px at 80% -10%, rgba(139,123,255,.10), transparent 60%),
+        radial-gradient(900px 500px at -10% 110%, rgba(92,214,239,.08), transparent 55%),
+        var(--bg);
+      color:var(--ink);
+      font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      -webkit-font-smoothing:antialiased;
+      display:flex; flex-direction:column; align-items:center;
+      padding:48px 18px max(36px,env(safe-area-inset-bottom));
+      min-height:100dvh;
+    }
+    .wrap{ width:100%; max-width:520px; }
+    .kicker{ font-size:11px; letter-spacing:.3em; color:var(--accent); font-weight:600; }
+    h1{ margin:8px 0 4px; font-size:28px; font-weight:700; letter-spacing:.3px; }
+    .sub{ color:var(--muted); font-size:14px; margin:0 0 28px; line-height:1.5; }
+    .grid{ display:flex; flex-direction:column; gap:14px; }
+    a.deck{
+      display:flex; align-items:center; gap:16px; text-decoration:none; color:inherit;
+      background:linear-gradient(180deg, var(--surface), var(--surface-2));
+      border:1px solid var(--line); border-radius:16px; padding:18px 18px;
+      transition:border-color .16s, transform .08s, box-shadow .16s;
+    }
+    a.deck:hover{ border-color:var(--accent); box-shadow:0 8px 30px rgba(92,214,239,.12); }
+    a.deck:active{ transform:translateY(1px); }
+    .glyph{
+      flex:0 0 auto; width:54px; height:54px; border-radius:14px;
+      display:flex; align-items:center; justify-content:center;
+      font-family:"JetBrains Mono",monospace; font-weight:700; font-size:20px;
+      color:#06121a; background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    }
+    .glyph.g2{ background:linear-gradient(135deg,#ffd166,#ff7a9c); }
+    .glyph.g3{ background:linear-gradient(135deg,#9af5c0,#5cd6ef); }
+    .deck-body{ flex:1; min-width:0; }
+    .deck-name{ font-size:17px; font-weight:700; }
+    .deck-name .tag{
+      font-family:"JetBrains Mono",monospace; font-size:9.5px; font-weight:600;
+      color:var(--accent); border:1px solid var(--line); border-radius:6px;
+      padding:2px 7px; margin-left:8px; vertical-align:middle; letter-spacing:.08em;
+    }
+    .deck-desc{ font-size:12.5px; color:var(--muted); margin-top:3px; line-height:1.4; }
+    .chev{ flex:0 0 auto; color:var(--faint); font-size:22px; }
+    footer{ margin-top:30px; font-size:11px; color:var(--faint); text-align:center; line-height:1.6; }
+    footer .mono{ font-family:"JetBrains Mono",monospace; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <span class="kicker">FLASHCARD DECKS</span>
+    <h1>Study Hub</h1>
+    <p class="sub">Three independent decks — multiple-choice, two-correct mastery, adaptive difficulty. Pick one to begin.</p>
+
+    <nav class="grid">
+      <a class="deck" href="ml_flashcards/">
+        <span class="glyph">ML</span>
+        <span class="deck-body">
+          <span class="deck-name">Machine Learning <span class="tag">ML</span></span>
+          <span class="deck-desc">Chronological evolution of neural nets — perceptron → CNN/RNN/LSTM → embeddings & vector DBs → transformers → GPT-3 → Claude → Claude Code.</span>
+        </span>
+        <span class="chev">›</span>
+      </a>
+
+      <a class="deck" href="flashcards/">
+        <span class="glyph g2">HX</span>
+        <span class="deck-body">
+          <span class="deck-name">History <span class="tag">HISTORY</span></span>
+          <span class="deck-desc">World history — people &amp; figures, events &amp; battles, ideas &amp; movements, treaties &amp; documents.</span>
+        </span>
+        <span class="chev">›</span>
+      </a>
+
+      <a class="deck" href="greek_flashcards/">
+        <span class="glyph g3">ΑΩ</span>
+        <span class="deck-body">
+          <span class="deck-name">Greek <span class="tag">GREEK</span></span>
+          <span class="deck-desc">Greek language &amp; culture flashcards.</span>
+        </span>
+        <span class="chev">›</span>
+      </a>
+    </nav>
+
+    <footer>
+      Installable PWAs · works offline after first load.<br />
+      Served via GitHub Pages from <span class="mono">/&lt;repo&gt;/</span>.
+    </footer>
+  </div>
+</body>
+</html>

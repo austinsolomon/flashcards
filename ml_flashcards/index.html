@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0e16" />
+  <meta name="description" content="A sleek, chronological flashcard deck on the evolution of neural network architectures — from the perceptron to CNNs, RNNs, transformers, LLMs and Claude Code." />
+  <title>ML — Neural Net Evolution · Flashcards</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- HEADER -->
+    <header class="hdr">
+      <div class="hdr-left">
+        <span class="hdr-kicker">NEURAL NET EVOLUTION</span>
+        <h1 class="hdr-title">ML <span class="dot">·</span> Architectures</h1>
+      </div>
+      <div class="hdr-tools">
+        <button id="dirToggle" class="icon-btn" title="Flip direction (A↔B)" aria-label="Flip direction">A→B</button>
+        <button id="shuffleBtn" class="icon-btn" title="Shuffle" aria-label="Shuffle">⤮</button>
+      </div>
+    </header>
+
+    <!-- CATEGORY TABS -->
+    <nav id="catTabs" class="cat-tabs" aria-label="Categories"></nav>
+
+    <!-- INSTRUCTIONS STRIP -->
+    <div id="instrStrip" class="instr-strip"></div>
+
+    <!-- STATS BAR -->
+    <div class="stats">
+      <div class="stat" id="streakChip"><span class="stat-k">Streak</span><span class="stat-v" id="streak">0</span></div>
+      <div class="stat"><span class="stat-k">Best</span><span class="stat-v" id="best">0</span></div>
+      <div class="stat"><span class="stat-k">Score</span><span class="stat-v" id="score">0/0</span></div>
+      <button id="resetBtn" class="reset-btn" title="Reset all progress">Reset</button>
+    </div>
+
+    <!-- DIFFICULTY METER (separate element, under stats) -->
+    <div id="meter" class="meter">
+      <div class="meter-badge" id="meterBadge">L1</div>
+      <div class="meter-body">
+        <div class="meter-dots" id="meterDots" aria-hidden="true"></div>
+        <div class="meter-hint" id="meterHint">5 in a row → L2</div>
+      </div>
+    </div>
+
+    <!-- CARD STAGE -->
+    <main class="stage" id="stage">
+      <div class="card" id="card">
+        <div class="card-top">
+          <div class="card-concept" id="cardConcept">—</div>
+          <div class="card-year" id="cardYear">—</div>
+        </div>
+
+        <!-- chronological timeline visual -->
+        <div class="timeline" id="timeline" aria-hidden="true">
+          <div class="tl-track"></div>
+          <div class="tl-marker" id="tlMarker"></div>
+          <span class="tl-min" id="tlMin"></span>
+          <span class="tl-max" id="tlMax"></span>
+        </div>
+
+        <div class="prompt" id="prompt">Loading deck…</div>
+
+        <div class="options" id="options"></div>
+
+        <div class="answer" id="answerBlock" hidden>
+          <div class="ans-row"><span class="ans-tag">A</span><span id="ansA"></span></div>
+          <div class="ans-row"><span class="ans-tag b">B</span><span id="ansB"></span></div>
+          <div class="ans-notes" id="ansNotes"></div>
+        </div>
+
+        <div class="tags-row" id="tagsRow"></div>
+      </div>
+    </main>
+
+    <!-- BOTTOM NAV — left-thumb zone -->
+    <nav class="navbar">
+      <button id="nextBtn" class="nav-next" aria-label="Next card">Next ›</button>
+      <button id="revealBtn" class="nav-sec" aria-label="Reveal answer">Reveal</button>
+      <button id="prevBtn" class="nav-sec" aria-label="Previous card">‹ Prev</button>
+    </nav>
+
+  </div>
+
+  <!-- CATEGORY COMPLETE OVERLAY -->
+  <div id="overlay" class="overlay" hidden>
+    <div class="overlay-card">
+      <div class="overlay-kicker">DECK CLEARED</div>
+      <h2 class="overlay-title" id="overlayTitle">CATEGORY COMPLETE</h2>
+      <p class="overlay-sub" id="overlaySub"></p>
+      <div class="overlay-actions">
+        <button id="restartBtn" class="nav-next overlay-btn">Restart this category</button>
+        <button id="overlayCloseBtn" class="nav-sec overlay-btn">Pick another</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
