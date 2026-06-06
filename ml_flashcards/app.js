@@ -410,10 +410,11 @@ const v3txt = (ctx,x,y,s,col,al,sz)=>{ ctx.fillStyle=col||"rgba(205,215,230,.95)
 function drawBoxWire(ctx,verts,a,col){ const pv=verts.map(p=>proj3(p,a)); ctx.strokeStyle=col; ctx.lineWidth=1.1; ctx.beginPath(); BOX_E.forEach(([i,j])=>{ctx.moveTo(pv[i][0],pv[i][1]);ctx.lineTo(pv[j][0],pv[j][1]);}); ctx.stroke(); }
 
 function mount3D(host, sceneFn){
-  host.innerHTML = '<canvas class="viz3d"></canvas>';
-  const cv = host.firstChild, ctx = cv.getContext("2d");
-  let W=0, H=108, dpr=1, raf=0;
-  const a = { angX:-0.32, angY:0.55, focal:5.2, sw:1, cx:0, cy:0 };
+  host.innerHTML = '<canvas class="viz3d"></canvas><button class="viz3d-badge" type="button" aria-label="Play animation">3D ▶</button>';
+  const cv = host.querySelector("canvas"), badge = host.querySelector(".viz3d-badge"), ctx = cv.getContext("2d");
+  let W=0, H=108, dpr=1, raf=0, playing=false, t0=0;
+  const a = { angX:-0.30, angY:0.5, focal:5.2, sw:1, cx:0, cy:0 };   // fixed angle — no auto-rotate
+  const scene = sceneFn();
   function resize(){
     dpr = Math.min(2, window.devicePixelRatio || 1);
     W = host.clientWidth || 300;
@@ -422,71 +423,98 @@ function mount3D(host, sceneFn){
     ctx.setTransform(dpr,0,0,dpr,0,0);
     a.cx = W/2; a.cy = H/2; a.sw = Math.min(W*0.16, 46);
   }
-  const scene = sceneFn();
-  const t0 = performance.now();
-  function frame(){
-    a.angY += 0.006;
-    ctx.clearRect(0,0,W,H);
-    scene(ctx, a, performance.now()-t0, W, H);
-    raf = requestAnimationFrame(frame);
+  const DUR = 2600;
+  function paint(dt, active){ ctx.clearRect(0,0,W,H); scene(ctx, a, dt, W, H, active); }
+  function loop(){
+    const dt = performance.now() - t0;
+    paint(dt, true);
+    if (dt < DUR){ raf = requestAnimationFrame(loop); }
+    else { playing = false; badge.textContent = "3D ▶"; badge.classList.remove("on"); paint(0, false); }
   }
-  resize(); window.addEventListener("resize", resize); frame();
-  return { stop(){ cancelAnimationFrame(raf); window.removeEventListener("resize", resize); } };
+  function play(){ if (playing) return; playing = true; t0 = performance.now(); badge.textContent = "▶ playing"; badge.classList.add("on"); cancelAnimationFrame(raf); loop(); }
+  resize(); paint(0, false);                              // static first frame
+  const onResize = () => { resize(); paint(playing ? performance.now()-t0 : 0, playing); };
+  window.addEventListener("resize", onResize);
+  cv.addEventListener("click", play);
+  badge.addEventListener("click", e => { e.stopPropagation(); play(); });
+  return { stop(){ cancelAnimationFrame(raf); window.removeEventListener("resize", onResize); } };
 }
 
-/* --- scenes --- */
-function scenePerceptron(){
-  const inputs = [[-2.4,0.85,0],[-2.4,0,0],[-2.4,-0.85,0]];
-  const neuron = [0,0,0], output = [2.4,0,0];
-  return (ctx,a,t,W,H)=>{
+/* --- scene: a single neuron actually calculating (click to run) --- */
+function sceneNeuron(){
+  const X = [0.70, -0.40, 0.90], Wt = [0.80, 0.50, -0.30], bias = 0.20;
+  const total = bias + X.reduce((s,v,i)=>s+v*Wt[i], 0);
+  const sigmoid = z => 1/(1+Math.exp(-z));
+  const inputs = [[-2.4,0.9,0],[-2.4,0,0],[-2.4,-0.9,0]];
+  const neuron = [0,0,0], output = [2.5,0,0];
+  return (ctx,a,dt,W,H,active)=>{
+    const p = active ? Math.min(1, dt/2400) : 1;
     const N = proj3(neuron,a), O = proj3(output,a);
-    const vals = inputs.map((_,i)=> Math.sin(t/950 + i*2.1)*0.9 );
-    inputs.forEach(p => v3line(ctx, proj3(p,a), N, "rgba(120,140,170,.5)", 1));
-    v3line(ctx, N, O, "rgba(120,140,170,.5)", 1);
-    const ph = (t % 1500) / 1500;                       // signal pulse
-    inputs.forEach(p => v3node(ctx, v3lerp(proj3(p,a), N, ph), 3, "#5cd6ef"));
-    v3node(ctx, v3lerp(N, O, ph), 3, "#8b7bff");
-    inputs.forEach((p,i)=>{ const P=proj3(p,a); v3node(ctx,P,6,"#5cd6ef"); v3txt(ctx,P[0]-16,P[1]+3, vals[i].toFixed(2), "rgba(138,152,173,.95)","end",9); });
-    v3node(ctx, N, 13, "rgba(139,123,255,.18)", "#8b7bff"); v3txt(ctx, N[0], N[1]+4, "Σƒ", "#cdd7e6","center",11);
-    const sum = vals.reduce((s,v)=>s+v,0), out = 1/(1+Math.exp(-sum));
-    v3node(ctx, O, 7, null, "#8b7bff"); v3txt(ctx, O[0]+16, O[1]+3, out.toFixed(2), "#5cd6ef","start",10);
-    v3txt(ctx, a.cx, H-6, "one neuron · weighted sum → activation", "rgba(138,152,173,.9)","center",9);
+    // edges + weights
+    inputs.forEach((pt,i)=>{ const P=proj3(pt,a); v3line(ctx,P,N,"rgba(120,140,170,.5)",1);
+      const mid=v3lerp(P,N,0.5); v3txt(ctx,mid[0],mid[1]-4,"w "+Wt[i].toFixed(1),"rgba(120,140,170,.8)","center",8); });
+    v3line(ctx,N,O,"rgba(120,140,170,.5)",1);
+    // running sum as contributions arrive
+    let partial = bias, arrived = 0;
+    inputs.forEach((pt,i)=>{
+      const start=i*0.16, f=Math.max(0,Math.min(1,(p-start)/0.34));
+      if (f>=1){ partial += X[i]*Wt[i]; arrived++; }
+      if (active && f>0 && f<1) v3node(ctx, v3lerp(proj3(pt,a),N,f), 3.4, "#5cd6ef");
+    });
+    // input nodes + values (above each node so they never clip the edge)
+    inputs.forEach((pt,i)=>{ const P=proj3(pt,a); v3node(ctx,P,6,"#5cd6ef"); v3txt(ctx,P[0],P[1]-9,X[i].toFixed(1),"rgba(138,152,173,.95)","center",9); });
+    // neuron
+    const fired = p>=0.74;
+    v3node(ctx, N, 14, fired?"rgba(54,211,153,.20)":"rgba(139,123,255,.16)", fired?"#36d399":"#8b7bff");
+    v3txt(ctx, N[0], N[1]-1, "Σ+b", "#cdd7e6","center",9);
+    v3txt(ctx, N[0], N[1]+10, (active?partial:total).toFixed(2), "#cdd7e6","center",8);
+    // output
+    const g = Math.max(0,Math.min(1,(p-0.76)/0.2));
+    if (active && g>0 && g<1) v3node(ctx, v3lerp(N,O,g), 3.4, "#36d399");
+    const show = !active || g>=1;
+    v3node(ctx, O, 8, null, "#36d399");
+    v3txt(ctx, O[0]+15, O[1]+3, show ? "ƒ="+sigmoid(total).toFixed(2) : "?", show?"#36d399":"rgba(138,152,173,.7)","start",10);
+    v3txt(ctx, a.cx, H-6, active ? "summing weighted inputs → activation" : "tap ▶ to run the calculation", "rgba(138,152,173,.9)","center",9);
   };
 }
+
+/* --- scene: a small network passing a signal through its layers --- */
 function sceneMLP(){
   const L0=[[-2.2,0.9,0],[-2.2,0,0],[-2.2,-0.9,0]];
   const L1=[[0,1.25,0],[0,0.42,0],[0,-0.42,0],[0,-1.25,0]];
   const L2=[[2.2,0.6,0],[2.2,-0.6,0]];
   const layers=[L0,L1,L2];
-  return (ctx,a,t,W,H)=>{
+  return (ctx,a,dt,W,H,active)=>{
     L0.forEach(p=>L1.forEach(q=>v3line(ctx,proj3(p,a),proj3(q,a),"rgba(120,140,170,.32)",0.7)));
     L1.forEach(p=>L2.forEach(q=>v3line(ctx,proj3(p,a),proj3(q,a),"rgba(120,140,170,.32)",0.7)));
-    const ph=(t%2400)/2400;
-    layers.forEach((Lr,li)=>{ const active = ph>=li/3 && ph<(li+1)/3;
-      Lr.forEach(p=>{ const P=proj3(p,a); v3node(ctx,P,6, li===1?"#8b7bff":"#5cd6ef"); if(active) v3node(ctx,P,9,null,"#ffffff"); });
+    const p = active ? (dt%2400)/2400 : -1;
+    layers.forEach((Lr,li)=>{ const on = active && p>=li/3 && p<(li+1)/3;
+      Lr.forEach(pt=>{ const P=proj3(pt,a); v3node(ctx,P,6, li===1?"#8b7bff":"#5cd6ef"); if(on) v3node(ctx,P,9,null,"#ffffff"); });
     });
-    v3txt(ctx, a.cx, H-6, "signal propagates layer → layer", "rgba(138,152,173,.9)","center",9);
+    v3txt(ctx, a.cx, H-6, active ? "signal propagates layer → layer" : "tap ▶ to send a signal through", "rgba(138,152,173,.9)","center",9);
   };
 }
-function sceneTransformer(){
-  const slabs=[]; for(let i=0;i<5;i++) slabs.push(-0.95+i*0.46);
-  return (ctx,a,t,W,H)=>{
-    slabs.forEach(X=> drawBoxWire(ctx, boxVerts(X,0,0,0.3,1.45,1.15), a, "#8b7bff"));
-    const ph=(t%2600)/2600, px=-1.15+ph*2.3;
-    v3node(ctx, proj3([px,0,0],a), 4, "#5cd6ef");
-    v3txt(ctx, a.cx, H-6, "transformer blocks × N", "rgba(138,152,173,.9)","center",9);
-  };
+
+/* 3D only when the QUESTION is about that mechanism (not decoration). */
+function scene3dFor(card){
+  const s = ((card.concept||"") + " " + (card.b[0]||"")).toLowerCase();
+  const b = (card.b[0]||"").toLowerCase();
+  if (/bptt|through time|recurrent|convolutional|graph neural|residual|highway/.test(s)) return null;
+  if (/multilayer|hidden layer|feedforward/.test(s) || b === "neural network") return sceneMLP;
+  if (/perceptron|artificial neuron|mcculloch|bias term/.test(s)) return sceneNeuron;
+  if (/backpropagation|forward pass/.test(s)) return sceneMLP;
+  return null;
 }
-const VIZ3D = { perceptron: scenePerceptron, mlp: sceneMLP, network: sceneMLP, transformer: sceneTransformer };
 
 function renderViz(card){
   if (!HAS_DOM) return;
   stopViz3D();
-  const type = vizFor(card);
-  if (VIZ3D[type]){
-    try { vizCtl = mount3D(el.viz, VIZ3D[type]); return; }
+  const scene = scene3dFor(card);
+  if (scene){
+    try { vizCtl = mount3D(el.viz, scene); return; }
     catch(e){ /* fall back to SVG */ }
   }
+  const type = vizFor(card);
   el.viz.innerHTML = (DIAGRAMS[type] || DIAGRAMS.network)();
 }
 
