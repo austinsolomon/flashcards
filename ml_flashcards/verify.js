@@ -90,6 +90,15 @@ for (const c of cards){
 }
 if (d3OK) ok(`${d3} cards use a 3D demo, and every one is a mechanism question`);
 
+/* 6) answer quality: options are proper nouns / concepts, not loose phrases */
+console.log("\n[6] answers read as proper nouns / concepts (not phrases)");
+const PHRASE = /→|\bvs\.?\b|n['’]t\b|\byou\b|\bevery\b|^[a-z]/;
+let aqOK = true;
+for (const c of cards){
+  if (PHRASE.test(c.b[0])){ bad(`phrase-like answer on ${c.id}: "${c.b[0]}"`); aqOK = false; }
+}
+if (aqOK) ok(`all ${cards.length} answers are proper nouns / concepts (no arrows, contractions, "vs", or lowercase starts)`);
+
 /* 4) diagram coverage -------------------------------------------------- */
 console.log("\n[4] concept diagram coverage");
 let vizOK = true;
