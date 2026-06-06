@@ -42,35 +42,61 @@ function buildSequence(cards, catId){
       a.id.localeCompare(b.id));
 }
 
-/** Build 4 distinct MC options for a card in a given direction.
-    "ab": prompt=a, answer=b (options are b-sides)
-    "ba": prompt=b, answer=a (options are a-sides) */
-function buildOptions(card, pool, direction, rnd){
+/* Classify an answer so multiple-choice options are the SAME kind of thing
+   (all names, all models/methods, or all concepts) — never a mix. */
+const MODEL_RE = /\b(BERT|GPT|GPT-2|GPT-3|T5|CLIP|ELMo|GloVe|Word2Vec|ResNet|VGGNet|AlexNet|LeNet|Inception|GoogLeNet|FAISS|HNSW|Pinecone|pgvector|Exa|Claude|ChatGPT|Anthropic|RoPE|LSTM|GRU|RNN|CNN|GNN|GAN|MoE|RAG|RLHF|RLAIF|MCP|BPE|SGD|Adam|ReLU)\b/;
+function answerType(text){
+  text = text || "";
+  if (/\(\d{4}\)|\bet al\.?/.test(text)) return "person";   // "Harris (1954)", "LeCun et al. (1989)"
+  if (MODEL_RE.test(text)) return "model";                   // named models / methods / acronyms
+  return "term";                                             // concepts
+}
+
+/** Build 4 distinct, type-consistent MC options.
+    "ab": prompt=a, answer=b (options are b-sides, type-matched)
+    "ba": prompt=b, answer=a (options are a-sides — uniform clue sentences) */
+function buildOptions(card, pool, direction, rnd, all){
   rnd = rnd || Math.random;
-  const ansKey = direction === "ab" ? "b" : "a";
-  const correct = card[ansKey][0];
+  all = all || pool;
+  const key = direction === "ab" ? "b" : "a";
+  const correct = card[key][0];
+  const shuffle = arr => { const a = arr.slice(); for (let i=a.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+
+  // ordered candidate sources — earlier = better type match
+  const sources = [];
+  if (direction === "ab"){
+    const T = answerType(correct);
+    if (T === "person"){
+      sources.push(all.filter(c => answerType(c.b[0]) === "person"));
+    } else if (T === "model"){
+      sources.push(pool.filter(c => answerType(c.b[0]) === "model"));
+      sources.push(all.filter(c => answerType(c.b[0]) === "model"));
+      sources.push(pool.filter(c => answerType(c.b[0]) === "term"));
+    } else {
+      sources.push(pool.filter(c => answerType(c.b[0]) === "term"));
+      sources.push(pool);
+    }
+  } else {
+    sources.push(pool);
+  }
+  sources.push(all);   // last-resort top-up so we always reach 4
+
   const seen = new Set([correct]);
   const distract = [];
-  const others = pool.filter(c => c.id !== card.id);
-  for (let i = others.length - 1; i > 0; i--){
-    const j = Math.floor(rnd() * (i + 1));
-    [others[i], others[j]] = [others[j], others[i]];
-  }
-  for (const c of others){
+  for (const src of sources){
     if (distract.length >= 3) break;
-    const v = c[ansKey][0];
-    if (!seen.has(v)){ seen.add(v); distract.push(v); }
+    for (const c of shuffle(src)){
+      if (distract.length >= 3) break;
+      if (c.id === card.id) continue;
+      const v = c[key][0];
+      if (!seen.has(v)){ seen.add(v); distract.push(v); }
+    }
   }
-  const opts = [correct, ...distract];
-  for (let i = opts.length - 1; i > 0; i--){
-    const j = Math.floor(rnd() * (i + 1));
-    [opts[i], opts[j]] = [opts[j], opts[i]];
-  }
-  return { options: opts, correct };
+  return { options: shuffle([correct, ...distract]), correct };
 }
 
 if (typeof module !== "undefined" && module.exports){
-  module.exports = { buildSequence, buildOptions, vizFor,
+  module.exports = { buildSequence, buildOptions, vizFor, answerType,
     get DIAGRAMS(){ return DIAGRAMS; }, get scene3dFor(){ return scene3dFor; } };
 }
 
@@ -644,7 +670,7 @@ function renderCard(){
 
   el.prompt.textContent = state.direction === "ab" ? card.a[0] : card.b[0];
 
-  const { options, correct } = buildOptions(card, catCards(card.category), state.direction);
+  const { options, correct } = buildOptions(card, catCards(card.category), state.direction, undefined, state.cards);
   el.options.innerHTML = "";
   options.forEach((txt, i) => {
     const btn = document.createElement("button");
