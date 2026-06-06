@@ -1,7 +1,7 @@
 /* Service worker — ML Neural Net Evolution flashcards.
    Network-first so a fresh deploy always wins when online; falls back to
    cache only when offline. (Avoids the "looks the same after deploy" trap.) */
-const CACHE = "ml-flashcards-v9";
+const CACHE = "ml-flashcards-v10";
 const STATIC = [
   "./",
   "./index.html",

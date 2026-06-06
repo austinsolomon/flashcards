@@ -3,7 +3,7 @@
    Uses the REAL pure functions exported from app.js. */
 const fs = require("fs");
 const path = require("path");
-const { buildSequence, buildOptions, vizFor, scene3dFor } = require("./app.js");
+const { buildSequence, buildOptions, vizFor, scene3dFor, answerType } = require("./app.js");
 
 let fail = 0;
 const ok  = m => console.log("  ✓ " + m);
@@ -45,17 +45,24 @@ for (const cat of CATS){
 
 /* 2) MC draws ---------------------------------------------------------- */
 console.log("\n[2] MC options (exhaustive, both directions)");
-let mcOK = true;
+let mcOK = true, typeOK = true;
 for (const dir of ["ab","ba"]){
   for (const card of cards){
     const pool = cards.filter(c => c.category === card.category);
-    const { options, correct } = buildOptions(card, pool, dir);
+    const { options, correct } = buildOptions(card, pool, dir, undefined, cards);
     if (options.length !== 4 || new Set(options).size !== 4 || !options.includes(correct)){
       bad(`${dir} ${card.id}: bad options`); mcOK = false;
+    }
+    // A→B options must be the same TYPE as the answer (names with names, etc.)
+    if (dir === "ab"){
+      const want = answerType(correct);
+      const mixed = options.filter(o => answerType(o) !== want);
+      if (mixed.length){ bad(`type mix on ${card.id} (${want}): ${mixed.join(" | ")}`); typeOK = false; }
     }
   }
 }
 if (mcOK) ok(`every card in both A→B and B→A yields 4 distinct options incl. the answer`);
+if (typeOK) ok(`A→B options are always the same type as the answer (person / model / term)`);
 
 /* 3) ordering: Origins on-ramp first, then chronological ---------------- */
 console.log("\n[3] ordering — Origins first, then chronological");
