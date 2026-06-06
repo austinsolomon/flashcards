@@ -1,5 +1,7 @@
-/* Service worker — ML Neural Net Evolution flashcards */
-const CACHE = "ml-flashcards-v3";
+/* Service worker — ML Neural Net Evolution flashcards.
+   Network-first so a fresh deploy always wins when online; falls back to
+   cache only when offline. (Avoids the "looks the same after deploy" trap.) */
+const CACHE = "ml-flashcards-v4";
 const STATIC = [
   "./",
   "./index.html",
@@ -12,41 +14,35 @@ const STATIC = [
 
 self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(STATIC)).then(() => self.skipWaiting())
+    caches.open(CACHE).then(c => c.addAll(STATIC)).then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener("fetch", event => {
   const req = event.request;
   if (req.method !== "GET") return;
-  const url = new URL(req.url);
+  const sameOrigin = new URL(req.url).origin === self.location.origin;
+  if (!sameOrigin) return; // let cross-origin requests pass through untouched
 
-  // network-first for the deck so content updates land quickly
-  if (url.pathname.endsWith("cards.json")) {
-    event.respondWith(
-      fetch(req).then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(req, copy));
-        return res;
-      }).catch(() => caches.match(req))
-    );
-    return;
-  }
-
-  // cache-first for static assets
+  // Network-first: fetch fresh, update cache, fall back to cache offline.
   event.respondWith(
-    caches.match(req).then(cached => cached || fetch(req).then(res => {
-      const copy = res.clone();
-      caches.open(CACHE).then(c => c.put(req, copy));
-      return res;
-    }).catch(() => cached))
+    fetch(req)
+      .then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {});
+        return res;
+      })
+      .catch(() =>
+        caches.match(req, { ignoreSearch: true })
+          .then(hit => hit || caches.match("./index.html"))
+      )
   );
 });
