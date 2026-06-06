@@ -3,7 +3,7 @@
    Uses the REAL pure functions exported from app.js. */
 const fs = require("fs");
 const path = require("path");
-const { buildSequence, buildOptions, vizFor } = require("./app.js");
+const { buildSequence, buildOptions, vizFor, scene3dFor } = require("./app.js");
 
 let fail = 0;
 const ok  = m => console.log("  ✓ " + m);
@@ -57,15 +57,31 @@ for (const dir of ["ab","ba"]){
 }
 if (mcOK) ok(`every card in both A→B and B→A yields 4 distinct options incl. the answer`);
 
-/* 3) single global chronological timeline ------------------------------ */
-console.log("\n[3] global chronological ordering");
-const seq = buildSequence(cards);                 // no catId = full timeline
+/* 3) ordering: Origins on-ramp first, then chronological ---------------- */
+console.log("\n[3] ordering — Origins first, then chronological");
+const seq = buildSequence(cards);
 let seqOK = seq.length === cards.length;
-if (!seqOK) bad(`global sequence covers ${seq.length} of ${cards.length} cards`);
-for (let i = 1; i < seq.length; i++){
+if (!seqOK) bad(`sequence covers ${seq.length} of ${cards.length} cards`);
+const firstNonOrigin = seq.findIndex(c => c.category !== "origins");
+const lastOrigin = seq.map(c => c.category).lastIndexOf("origins");
+if (lastOrigin > firstNonOrigin){ bad("Origins cards are not all at the front"); seqOK = false; }
+for (let i = firstNonOrigin + 1; i < seq.length; i++){
   if (seq[i].year < seq[i-1].year){ bad(`out of chronological order at ${i}`); seqOK = false; break; }
 }
-if (seqOK) ok(`all ${seq.length} cards in one timeline, oldest→newest (${seq[0].year} → ${seq[seq.length-1].year})`);
+if (seqOK) ok(`${firstNonOrigin} Origins cards first, then chronological (${seq[firstNonOrigin].year} → ${seq[seq.length-1].year})`);
+
+/* 5) HARD REQUIREMENT: every 3D-demo card's question is about the demo --- */
+console.log("\n[5] 3D demos are mechanism questions (hard requirement)");
+const MECH = /neuron|node|weight|sum|bias|activation|layer|propagat|network|perceptron/;
+let d3 = 0, d3OK = true;
+for (const c of cards){
+  if (scene3dFor(c)){
+    d3++;
+    const txt = ((c.a[0]||"") + " " + (c.concept||"")).toLowerCase();
+    if (!MECH.test(txt)){ bad(`3D card not about its mechanism: ${c.id}`); d3OK = false; }
+  }
+}
+if (d3OK) ok(`${d3} cards use a 3D demo, and every one is a mechanism question`);
 
 /* 4) diagram coverage -------------------------------------------------- */
 console.log("\n[4] concept diagram coverage");
