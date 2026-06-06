@@ -3,13 +3,17 @@
    Uses the REAL pure functions exported from app.js. */
 const fs = require("fs");
 const path = require("path");
-const { targetLevel, cardWeight, buildOptions } = require("./app.js");
+const { buildSequence, buildOptions, vizFor } = require("./app.js");
 
 let fail = 0;
 const ok  = m => console.log("  ✓ " + m);
 const bad = m => { console.log("  ✗ " + m); fail++; };
 
 const CATS = ["foundations","vision_sequence","representations","transformers_llms"];
+const VIZ = ["perceptron","mlp","activation","gradient","cnn","rnn","lstm","seq2seq",
+             "attention","embedding","vectordb","rag","transformer","scaling","rlhf",
+             "agent","tokens","network",
+             "supervised","clustering","overfit","dropout","softmax","trainloop","rl"];
 const cards = JSON.parse(fs.readFileSync(path.join(__dirname, "cards.json"), "utf8"));
 
 /* 1) schema + integrity ------------------------------------------------ */
@@ -17,71 +21,68 @@ console.log("\n[1] cards.json integrity");
 const ids = new Set();
 let schemaOK = true;
 for (const c of cards){
-  const need = ["id","category","difficulty","concept","a","b","notes","tags"];
-  for (const f of need){
-    if (!(f in c)){ bad(`card ${c.id||"?"} missing field '${f}'`); schemaOK = false; }
+  for (const f of ["id","category","difficulty","concept","a","b","notes","tags","year"]){
+    if (!(f in c)){ bad(`card ${c.id||"?"} missing '${f}'`); schemaOK = false; }
   }
   if (ids.has(c.id)){ bad(`duplicate id: ${c.id}`); schemaOK = false; }
   ids.add(c.id);
   if (!Number.isInteger(c.difficulty) || c.difficulty < 1 || c.difficulty > 5){
     bad(`bad difficulty on ${c.id}: ${c.difficulty}`); schemaOK = false;
   }
-  if (!CATS.includes(c.category)){ bad(`bad category on ${c.id}: ${c.category}`); schemaOK = false; }
+  if (!CATS.includes(c.category)){ bad(`bad category on ${c.id}`); schemaOK = false; }
   if (!Array.isArray(c.a) || !c.a.length || !Array.isArray(c.b) || !c.b.length){
     bad(`a/b must be non-empty arrays on ${c.id}`); schemaOK = false;
   }
+  if (!Number.isInteger(c.year)){ bad(`bad year on ${c.id}`); schemaOK = false; }
 }
-if (schemaOK) ok(`${cards.length} cards, all fields present, no dup ids, difficulty 1-5, categories valid`);
-
-/* distribution report */
+if (schemaOK) ok(`${cards.length} cards: fields present, no dup ids, difficulty 1-5, categories+years valid`);
 for (const cat of CATS){
   const cc = cards.filter(c => c.category === cat);
   const tiers = [1,2,3,4,5].map(t => cc.filter(c => c.difficulty === t).length);
   ok(`${cat}: ${cc.length} cards  L1-L5 = ${tiers.join("/")}`);
 }
 
-/* 2) MC draw simulation ------------------------------------------------ */
-console.log("\n[2] 60 random MC draws (30 A→B, 30 B→A)");
-function byCat(cat){ return cards.filter(c => c.category === cat); }
-let drawsOK = true;
-function simulate(direction, n){
-  for (let i = 0; i < n; i++){
-    const card = cards[Math.floor(Math.random() * cards.length)];
-    const pool = byCat(card.category);
-    const { options, correct } = buildOptions(card, pool, direction);
-    if (options.length !== 4){ bad(`${direction} ${card.id}: ${options.length} options (need 4)`); drawsOK = false; }
-    if (new Set(options).size !== 4){ bad(`${direction} ${card.id}: options not distinct`); drawsOK = false; }
-    if (!options.includes(correct)){ bad(`${direction} ${card.id}: correct answer missing`); drawsOK = false; }
+/* 2) MC draws ---------------------------------------------------------- */
+console.log("\n[2] MC options (exhaustive, both directions)");
+let mcOK = true;
+for (const dir of ["ab","ba"]){
+  for (const card of cards){
+    const pool = cards.filter(c => c.category === card.category);
+    const { options, correct } = buildOptions(card, pool, dir);
+    if (options.length !== 4 || new Set(options).size !== 4 || !options.includes(correct)){
+      bad(`${dir} ${card.id}: bad options`); mcOK = false;
+    }
   }
 }
-simulate("ab", 30);
-simulate("ba", 30);
-if (drawsOK) ok("all 60 draws produced 4 distinct options containing the correct answer");
+if (mcOK) ok(`every card in both A→B and B→A yields 4 distinct options incl. the answer`);
 
-/* 3) difficulty function walk ------------------------------------------ */
-console.log("\n[3] difficulty function walk");
-const walk = [[0,1],[4,1],[5,2],[9,2],[10,3],[14,3],[15,4],[19,4],[20,5]];
-let diffOK = true;
-const got = [];
-for (const [streak, want] of walk){
-  const lvl = targetLevel(streak);
-  got.push(lvl);
-  if (lvl !== want){ bad(`streak ${streak}: got L${lvl}, want L${want}`); diffOK = false; }
+/* 3) chronological sequence -------------------------------------------- */
+console.log("\n[3] chronological sequence ordering");
+let seqOK = true;
+for (const cat of CATS){
+  const seq = buildSequence(cards, cat);
+  if (seq.length !== cards.filter(c => c.category === cat).length){
+    bad(`${cat}: sequence does not cover all cards`); seqOK = false;
+  }
+  for (let i = 1; i < seq.length; i++){
+    if (seq[i].year < seq[i-1].year){ bad(`${cat}: out of order at ${i}`); seqOK = false; break; }
+  }
 }
-if (diffOK) ok(`streaks 0,4,5,9,10,14,15,19,20 → L${got.join(",L")}`);
+if (seqOK){
+  const f = buildSequence(cards, "foundations");
+  ok(`each section sorted oldest→newest (foundations: ${f[0].year} … ${f[f.length-1].year})`);
+}
 
-/* 4) weight sanity ----------------------------------------------------- */
-console.log("\n[4] weighting sanity");
-const sample = cards.find(c => c.difficulty === 3);
-const wTarget = cardWeight({difficulty:3}, 3, 0);
-const wNeighbor = cardWeight({difficulty:2}, 3, 0);
-const wHard = cardWeight({difficulty:5}, 3, 0);
-const wBonus = cardWeight({difficulty:3}, 3, 1);
-if (wTarget === 5 && wNeighbor === 2 && wHard === 0.4 && Math.abs(wBonus - 8) < 1e-9){
-  ok("target=5, neighbor=2, far-harder=0.4, mastery-bonus ×1.6 applied");
-} else {
-  bad(`weights off: target=${wTarget} neighbor=${wNeighbor} hard=${wHard} bonus=${wBonus}`);
+/* 4) diagram coverage -------------------------------------------------- */
+console.log("\n[4] concept diagram coverage");
+let vizOK = true;
+const used = new Set();
+for (const c of cards){
+  const v = vizFor(c);
+  used.add(v);
+  if (!VIZ.includes(v)){ bad(`${c.id}: unknown viz '${v}'`); vizOK = false; }
 }
+if (vizOK) ok(`all ${cards.length} cards map to a known diagram (${used.size} diagram types in use)`);
 
 /* result --------------------------------------------------------------- */
 console.log(fail === 0 ? "\nALL CHECKS PASSED ✓\n" : `\n${fail} CHECK(S) FAILED ✗\n`);
