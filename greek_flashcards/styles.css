@@ -724,3 +724,119 @@ body {
   0%   { transform: translateY(-20px) rotate(0); opacity: 1; }
   100% { transform: translateY(110vh) rotate(720deg); opacity: 0.9; }
 }
+
+/* ============================================================
+   COMPACT LAYOUT v21 — collapse 4 top bars into 1 status row
+   ============================================================ */
+
+/* Hide all elements moved into the compact topbar */
+.tb-hidden { display: none !important; }
+
+/* The single compact top status row — only difficulty + streak numbers */
+.topbar-compact {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: linear-gradient(90deg, #ff2d95, #9d4edd);
+  border-bottom: 2px solid var(--yellow);
+  color: #fff;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 11px;
+  min-height: 34px;
+  max-height: 36px;
+  z-index: 4;
+}
+.tb-level {
+  background: var(--yellow);
+  color: var(--hot);
+  padding: 2px 8px;
+  border-radius: 7px;
+  border: 1.5px solid #fff;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.45);
+  min-width: 34px;
+  text-align: center;
+}
+.tb-level.max {
+  background: var(--lime);
+  color: #9d0050;
+}
+.tb-dots {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--yellow);
+}
+.tb-dots .on { color: var(--yellow); text-shadow: 0 0 4px var(--yellow); }
+.tb-dots .off { color: rgba(255,255,255,0.3); }
+.tb-stat {
+  background: rgba(0,0,0,0.28);
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.tb-stat-dim { opacity: 0.75; font-size: 10.5px; margin-left: auto; }
+.tb-sep { font-style: normal; opacity: 0.55; margin: 0 1px; font-weight: 600; }
+.tb-btn {
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+  border: 1.5px solid rgba(255,255,255,0.4);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+.tb-btn:active { background: rgba(255,255,255,0.35); }
+.tb-reset { padding: 1px 6px; font-size: 14px; line-height: 1; }
+
+/* Level-up / level-down flash now lives on the topbar */
+.topbar-compact.dm-up .tb-level   { animation: tbUp   700ms ease-out; }
+.topbar-compact.dm-down .tb-level { animation: tbDown 700ms ease-out; }
+@keyframes tbUp {
+  0%   { transform: scale(1);    background: var(--lime); box-shadow: 0 0 0 var(--lime); }
+  25%  { transform: scale(1.35); box-shadow: 0 0 14px var(--lime); }
+  100% { transform: scale(1);    background: var(--yellow); }
+}
+@keyframes tbDown {
+  0%   { transform: scale(1);    background: #fff; color: var(--hot); }
+  25%  { transform: scale(0.82); box-shadow: 0 0 14px var(--hot); }
+  100% { transform: scale(1);    background: var(--yellow); }
+}
+
+/* Card stage gets ~70%+ of vertical space, smaller fonts overall */
+.card-stage { padding: 6px 10px 8px; }
+.card { padding: 12px 14px; gap: 8px; }
+.concept-row { gap: 6px; align-items: center; }
+.concept { font-size: clamp(14px, 4vw, 17px) !important; line-height: 1.2; }
+.card-stars { font-size: 12px; margin-left: 4px; }
+.prompt-row { gap: 6px; }
+.prompt { font-size: clamp(18px, 5.5vw, 24px) !important; line-height: 1.2; padding: 6px 0; }
+.mc-options { gap: 7px; }
+.mc-option { padding: 11px 13px !important; font-size: clamp(13px, 3.6vw, 15px) !important; min-height: 44px !important; }
+.feedback { font-size: 12px; padding: 6px 10px; }
+.ans-block { padding: 6px 8px; }
+.ans-label { font-size: 9px; }
+.ans-text { font-size: clamp(13px, 3.4vw, 15px) !important; }
+.notes summary { font-size: 11px; padding: 6px 8px; }
+.tags { gap: 4px; margin-top: 4px; }
+.tag { font-size: 10px; padding: 2px 7px; }
+
+/* Mascot compressed to ~50px — and we drop the marquee */
+.mascot { padding: 0; gap: 0; }
+.mascot-svg { max-height: 50px !important; }
+.marquee { display: none !important; }
+
+/* Bottom nav stays mobile-friendly but slimmer */
+.controls { padding: 6px 8px 8px; gap: 4px; }
+.next-big { min-height: 56px !important; font-size: 19px !important; padding: 10px 18px !important; }
+.secondary-controls { gap: 6px; }
+.secondary-controls button, .secondary-controls select {
+  padding: 6px 8px !important; font-size: 12px !important; min-height: 32px !important;
+}

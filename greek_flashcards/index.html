@@ -12,27 +12,18 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="deck-name" id="deckName">✩ greek_flashcards ✩</div>
-    <button class="dir-toggle" id="dirToggle" type="button" aria-label="Toggle direction">EN → GR</button>
-    <div class="progress"><span id="cardIndex">0</span> / <span id="cardTotal">0</span></div>
+  <header class="topbar-compact" id="topbarCompact" role="status" aria-live="polite">
+    <span class="tb-level" id="dmLevel">L1</span>
+    <span class="tb-dots" id="dmDots" aria-hidden="true">●○○○○</span>
+    <span class="tb-stat"><span id="statStreak">0</span><i class="tb-sep">/</i><span id="dmHint">5</span></span>
+    <span class="tb-stat tb-stat-dim"><span id="cardIndex">0</span><i class="tb-sep">/</i><span id="cardTotal">0</span></span>
+    <button class="tb-btn" id="dirToggle" type="button" aria-label="Toggle direction">EN⇄GR</button>
+    <button class="tb-btn tb-reset" id="resetStats" type="button" aria-label="Reset stats">⟲</button>
+    <span class="tb-hidden" id="statBest">0</span>
+    <span class="tb-hidden" id="statScore">0 / 0</span>
+    <span class="tb-hidden" id="deckName">greek_flashcards</span>
+    <span class="tb-hidden" id="instructionsStrip"></span>
   </header>
-
-  <div class="instructions-strip" id="instructionsStrip"><strong>Tip:</strong> Read prompt → tap Reveal → compare.</div>
-
-  <div class="stats-bar">
-    <span class="stat"><span class="stat-label">Streak</span><span class="stat-value" id="statStreak">0</span></span>
-    <span class="stat"><span class="stat-label">Best</span><span class="stat-value best" id="statBest">0</span></span>
-    <span class="stat"><span class="stat-label">Score</span><span class="stat-value" id="statScore">0 / 0</span></span>
-    <button class="reset-stats" id="resetStats" type="button" title="Reset all stats">Reset</button>
-  </div>
-
-  <div class="difficulty-meter" id="difficultyMeter" role="status" aria-live="polite">
-    <span class="dm-label">DIFFICULTY</span>
-    <span class="dm-level" id="dmLevel">L1</span>
-    <span class="dm-dots" id="dmDots" aria-hidden="true">●○○○○</span>
-    <span class="dm-hint" id="dmHint">2 right in a row → L2</span>
-  </div>
 
   <main class="card-stage">
     <section class="card" id="card" aria-live="polite">

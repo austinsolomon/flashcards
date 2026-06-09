@@ -40,7 +40,7 @@ const els = {
   statStreak: document.getElementById('statStreak'),
   statBest: document.getElementById('statBest'),
   statScore: document.getElementById('statScore'),
-  difficultyMeter: document.getElementById('difficultyMeter'),
+  topbarCompact: document.getElementById('topbarCompact'),
   dmLevel: document.getElementById('dmLevel'),
   dmDots: document.getElementById('dmDots'),
   dmHint: document.getElementById('dmHint'),
@@ -132,40 +132,36 @@ function renderStats() {
 }
 
 function renderDifficultyMeter() {
-  if (!els.difficultyMeter) return;
+  const bar = els.topbarCompact;
+  if (!bar) return;
   const streak = state.stats.streak;
   const lvl = targetDifficulty(streak);
 
-  // Level label
+  // Level chip
   els.dmLevel.textContent = 'L' + lvl;
   els.dmLevel.classList.toggle('max', lvl === 5);
 
-  // 5-dot progress (filled circles = unlocked tiers)
+  // 5-dot progress
   let dotsHtml = '';
   for (let i = 1; i <= 5; i++) {
     dotsHtml += `<span class="${i <= lvl ? 'on' : 'off'}">●</span>`;
   }
   els.dmDots.innerHTML = dotsHtml;
 
-  // Hint text — how to reach the next level (or MAX)
-  if (lvl >= 5) {
-    els.dmHint.textContent = 'MAX DIFFICULTY ✩';
-  } else {
-    const needed = streakForNextLevel(lvl) - streak;
-    els.dmHint.textContent = `${needed} more in a row → L${lvl + 1}`;
-  }
+  // Hint = just the threshold number for next level, or "MAX"
+  els.dmHint.textContent = lvl >= 5 ? 'MAX' : String(streakForNextLevel(lvl));
 
-  // Animate on change
+  // Animate the level chip on change
   if (lvl > lastRenderedLevel) {
-    els.difficultyMeter.classList.remove('dm-up', 'dm-down');
-    void els.difficultyMeter.offsetWidth;
-    els.difficultyMeter.classList.add('dm-up');
-    setTimeout(() => els.difficultyMeter.classList.remove('dm-up'), 950);
+    bar.classList.remove('dm-up', 'dm-down');
+    void bar.offsetWidth;
+    bar.classList.add('dm-up');
+    setTimeout(() => bar.classList.remove('dm-up'), 720);
   } else if (lvl < lastRenderedLevel) {
-    els.difficultyMeter.classList.remove('dm-up', 'dm-down');
-    void els.difficultyMeter.offsetWidth;
-    els.difficultyMeter.classList.add('dm-down');
-    setTimeout(() => els.difficultyMeter.classList.remove('dm-down'), 950);
+    bar.classList.remove('dm-up', 'dm-down');
+    void bar.offsetWidth;
+    bar.classList.add('dm-down');
+    setTimeout(() => bar.classList.remove('dm-down'), 720);
   }
   lastRenderedLevel = lvl;
 }
