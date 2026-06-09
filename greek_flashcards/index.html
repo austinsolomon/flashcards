@@ -50,7 +50,7 @@
 
       <div class="feedback hidden" id="feedback"></div>
 
-      <button class="reveal-btn hidden" id="revealBtn" type="button">Show answer (no score)</button>
+      <button class="reveal-btn hidden" id="revealBtn" type="button" hidden>Show answer (no score)</button>
 
       <div class="answer-row hidden" id="answerRow">
         <div id="answerBlocks"></div>
@@ -167,10 +167,8 @@
   </footer>
 
   <nav class="controls">
-    <div class="thumb-zone">
-      <button id="prevBtn" type="button" aria-label="Previous">‹ Prev</button>
-      <button id="bottomRevealBtn" type="button" aria-label="Reveal answer" class="reveal-bottom">Reveal</button>
-      <button id="nextBtn" type="button" aria-label="Next">Next ›</button>
+    <div class="thumb-zone thumb-zone-left">
+      <button id="nextBtn" type="button" aria-label="Next" class="next-big">Next ›</button>
     </div>
     <div class="secondary-controls">
       <button id="shuffleBtn" type="button" aria-label="Shuffle">↻ Shuffle</button>

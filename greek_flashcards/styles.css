@@ -375,7 +375,8 @@ body {
   background: linear-gradient(0deg, #2a0a3a, #4a1060);
   border-top: 3px solid var(--yellow);
 }
-.thumb-zone { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 8px; }
+.thumb-zone { display: flex; gap: 8px; align-items: stretch; }
+.thumb-zone-left { justify-content: flex-start; }
 .thumb-zone button {
   background: linear-gradient(var(--hot2), var(--hot));
   color: #fff;
@@ -390,16 +391,27 @@ body {
   font-family: inherit;
 }
 .thumb-zone button:active { transform: translateY(2px); box-shadow: 0 2px 0 #b1006a; }
-.reveal-bottom {
-  background: linear-gradient(var(--yellow), #ffb800) !important;
-  color: #9d0050 !important;
-  box-shadow: 0 4px 0 #b58a00 !important;
-}
-.reveal-bottom:active { box-shadow: 0 2px 0 #b58a00 !important; }
-.reveal-bottom.revealed {
+
+/* Big left-thumb Next: occupies ~70% of the row, on the left side. */
+.next-big {
+  flex: 0 1 70%;
+  max-width: 70%;
+  min-height: 64px;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  border-radius: 18px;
+  text-align: left;
+  padding-left: 22px;
   background: linear-gradient(var(--lime), #7ad400) !important;
   color: #1f5a00 !important;
-  box-shadow: 0 4px 0 #4f8a00 !important;
+  border: 3px solid #fff !important;
+  box-shadow: 0 5px 0 #4f8a00 !important;
+  text-shadow: 1px 1px 0 rgba(255,255,255,0.4);
+}
+.next-big:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #4f8a00 !important;
 }
 .secondary-controls { display: grid; grid-template-columns: 1fr 1.4fr; gap: 6px; }
 .secondary-controls button, .secondary-controls select {

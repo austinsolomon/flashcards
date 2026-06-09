@@ -30,14 +30,11 @@ const els = {
   feedback: document.getElementById('feedback'),
   answerRow: document.getElementById('answerRow'),
   answerBlocks: document.getElementById('answerBlocks'),
-  revealBtn: document.getElementById('revealBtn'),
   notesWrap: document.getElementById('notesWrap'),
   notes: document.getElementById('notes'),
   tags: document.getElementById('tags'),
-  prevBtn: document.getElementById('prevBtn'),
   nextBtn: document.getElementById('nextBtn'),
   shuffleBtn: document.getElementById('shuffleBtn'),
-  bottomRevealBtn: document.getElementById('bottomRevealBtn'),
   categoryFilter: document.getElementById('categoryFilter'),
   instructionsStrip: document.getElementById('instructionsStrip'),
   statStreak: document.getElementById('statStreak'),
@@ -579,8 +576,6 @@ function render() {
   });
 
   renderProgressOnly();
-  els.bottomRevealBtn.textContent = 'Reveal';
-  els.bottomRevealBtn.classList.remove('revealed');
 }
 
 function gotoCard(card) {
@@ -696,10 +691,7 @@ async function load() {
   applyCategoryFilter('');
 }
 
-els.revealBtn.addEventListener('click', revealWithoutScoring);
-els.bottomRevealBtn.addEventListener('click', revealWithoutScoring);
 els.nextBtn.addEventListener('click', next);
-els.prevBtn.addEventListener('click', prev);
 els.shuffleBtn.addEventListener('click', shuffle);
 els.dirToggle.addEventListener('click', toggleDirection);
 els.categoryFilter.addEventListener('change', e => applyCategoryFilter(e.target.value));
@@ -709,9 +701,8 @@ els.completeClose.addEventListener('click', hideCompletion);
 
 document.addEventListener('keydown', e => {
   if (e.target.matches('input, textarea, select')) return;
-  if (e.key === 'ArrowRight') next();
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); next(); }
   else if (e.key === 'ArrowLeft') prev();
-  else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); revealWithoutScoring(); }
   else if (e.key.toLowerCase() === 'd') toggleDirection();
   else if (e.key === 'Escape') hideCompletion();
 });
