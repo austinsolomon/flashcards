@@ -33,6 +33,7 @@ const els = {
   notesWrap: document.getElementById('notesWrap'),
   notes: document.getElementById('notes'),
   tags: document.getElementById('tags'),
+  promptSpeak: document.getElementById('promptSpeak'),
   nextBtn: document.getElementById('nextBtn'),
   shuffleBtn: document.getElementById('shuffleBtn'),
   categoryFilter: document.getElementById('categoryFilter'),
@@ -510,7 +511,18 @@ function render() {
 
   const promptKey = state.direction === 'en-to-gr' ? 'en' : 'gr';
   const answerKey = state.direction === 'en-to-gr' ? 'gr' : 'en';
-  els.prompt.textContent = (card[promptKey] || [])[0] || '';
+  const promptText = (card[promptKey] || [])[0] || '';
+  els.prompt.textContent = promptText;
+  // Speak button on prompt row: visible whenever prompt is in Greek.
+  if (els.promptSpeak) {
+    if (promptKey === 'gr' && promptText) {
+      els.promptSpeak.hidden = false;
+      els.promptSpeak.dataset.speakText = promptText;
+      els.promptSpeak.dataset.speakLang = 'el-GR';
+    } else {
+      els.promptSpeak.hidden = true;
+    }
+  }
 
   // build full-answer blocks (shown after MC answer)
   els.answerBlocks.innerHTML = '';
@@ -527,12 +539,23 @@ function render() {
     const text = document.createElement('div');
     text.className = 'ans-text ans-' + k;
     text.textContent = lines(card[k]);
+    row.appendChild(text);
+    // Speaker button for Greek (always) and English (if not Greek mode)
+    if (k === 'gr' || k === 'en') {
+      const speak = document.createElement('button');
+      speak.className = 'speak-btn';
+      speak.type = 'button';
+      speak.setAttribute('aria-label', k === 'gr' ? 'Pronounce in Greek' : 'Pronounce in English');
+      speak.dataset.speakText = lines(card[k]);
+      speak.dataset.speakLang = k === 'gr' ? 'el-GR' : 'en-US';
+      speak.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zm-2.5-7.5v2.05A5.99 5.99 0 0 1 18 12c0 2.61-1.67 4.84-4 5.65v2.05c3.39-.86 6-3.94 6-7.7s-2.61-6.84-6-7.45z"/></svg>';
+      row.appendChild(speak);
+    }
     const copy = document.createElement('button');
     copy.className = 'copy-btn';
     copy.type = 'button';
     copy.dataset.copyText = lines(card[k]);
     copy.textContent = 'Copy';
-    row.appendChild(text);
     row.appendChild(copy);
     block.appendChild(label);
     block.appendChild(row);
@@ -664,7 +687,40 @@ async function copyText(text, btn) {
   } catch (e) { btn.textContent = 'Failed'; }
   setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1200);
 }
+// ---------- speak (Web Speech API) ----------
+// Uses the device's built-in text-to-speech engine. iOS/Android pick the
+// system Greek voice automatically when lang='el-GR'.
+function speak(text, lang, btn) {
+  if (!text || !('speechSynthesis' in window)) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang || 'el-GR';
+    u.rate = 0.85;   // slightly slower for learning
+    u.pitch = 1.0;
+    if (btn) {
+      btn.classList.add('playing');
+      const off = () => btn.classList.remove('playing');
+      u.onend = off;
+      u.onerror = off;
+    }
+    window.speechSynthesis.speak(u);
+  } catch (e) { /* unsupported — silent fallback */ }
+}
+// iOS Safari needs the voice list to be primed; touching it once at load
+// makes the first utterance work without a delay.
+if ('speechSynthesis' in window) {
+  try { window.speechSynthesis.getVoices(); } catch (e) {}
+  window.speechSynthesis.onvoiceschanged = () => {};
+}
+
 document.addEventListener('click', e => {
+  const sp = e.target.closest('.speak-btn');
+  if (sp) {
+    e.preventDefault(); e.stopPropagation();
+    speak(sp.dataset.speakText || '', sp.dataset.speakLang || 'el-GR', sp);
+    return;
+  }
   const btn = e.target.closest('.copy-btn');
   if (!btn) return;
   e.preventDefault(); e.stopPropagation();

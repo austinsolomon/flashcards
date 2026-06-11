@@ -724,3 +724,39 @@ body {
   0%   { transform: translateY(-20px) rotate(0); opacity: 1; }
   100% { transform: translateY(110vh) rotate(720deg); opacity: 0.9; }
 }
+
+/* ---------- speaker button (Web Speech API) ---------- */
+.speak-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(var(--cyan), #0099b3);
+  color: #fff;
+  border: 2px solid #fff;
+  border-radius: 8px;
+  width: 34px;
+  height: 30px;
+  margin-left: 4px;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: 0 2px 0 #006a80;
+  flex: 0 0 auto;
+  font-family: inherit;
+}
+.speak-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 #006a80;
+}
+.speak-btn.playing {
+  background: linear-gradient(var(--lime), #7ad400);
+  color: #1f5a00;
+  box-shadow: 0 2px 0 #4f8a00;
+  animation: speakerPulse 600ms ease-in-out infinite alternate;
+}
+@keyframes speakerPulse {
+  from { transform: scale(1);    }
+  to   { transform: scale(1.08); box-shadow: 0 2px 0 #4f8a00, 0 0 10px var(--lime); }
+}
+.speak-btn svg { display: block; }
+/* Inline in the prompt row use a slightly smaller chip */
+#promptSpeak { width: 30px; height: 28px; }
