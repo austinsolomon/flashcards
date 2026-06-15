@@ -1,5 +1,5 @@
-/* History Crush — service worker */
-const CACHE = 'history-flashcards-v2';
+/* World History — Flashcard Review — service worker */
+const CACHE = 'history-flashcards-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',
