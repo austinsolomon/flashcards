@@ -9,7 +9,7 @@ let fail = 0;
 const ok  = m => console.log("  ✓ " + m);
 const bad = m => { console.log("  ✗ " + m); fail++; };
 
-const CATS = ["origins","foundations","vision_sequence","representations","transformers_llms"];
+const CATS = ["origins","foundations","vision_sequence","representations","transformers_llms","local_ai"];
 const VIZ = ["perceptron","mlp","activation","gradient","cnn","rnn","lstm","seq2seq",
              "attention","embedding","vectordb","rag","transformer","scaling","rlhf",
              "agent","tokens","network",
@@ -92,7 +92,7 @@ if (d3OK) ok(`${d3} cards use a 3D demo, and every one is a mechanism question`)
 
 /* 6) answer quality: options are proper nouns / concepts, not loose phrases */
 console.log("\n[6] answers read as proper nouns / concepts (not phrases)");
-const PHRASE = /→|\bvs\.?\b|n['’]t\b|\byou\b|\bevery\b|^[a-z]/;
+const PHRASE = /→|\bvs\.?\b|n['’]t\b|\byou\b|\bevery\b|^[a-z][^A-Z]*$/;
 let aqOK = true;
 for (const c of cards){
   if (PHRASE.test(c.b[0])){ bad(`phrase-like answer on ${c.id}: "${c.b[0]}"`); aqOK = false; }

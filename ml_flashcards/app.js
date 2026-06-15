@@ -20,7 +20,7 @@ const LS_STATE = "nn.state";
 /* era label shown on the card (never the specific term — that's the answer) */
 const CAT_LABEL = {
   origins:"Origins", foundations:"Foundations", vision_sequence:"Vision & Sequence",
-  representations:"Representations", transformers_llms:"Transformers & LLMs",
+  representations:"Representations", transformers_llms:"Transformers & LLMs", local_ai:"Local AI",
 };
 
 /* ===========================================================
@@ -44,7 +44,7 @@ function buildSequence(cards, catId){
 
 /* Classify an answer so multiple-choice options are the SAME kind of thing
    (all names, all models/methods, or all concepts) — never a mix. */
-const MODEL_RE = /\b(BERT|GPT|GPT-2|GPT-3|T5|CLIP|ELMo|GloVe|Word2Vec|ResNet|VGGNet|AlexNet|LeNet|Inception|GoogLeNet|FAISS|HNSW|Pinecone|pgvector|Exa|Claude|ChatGPT|Anthropic|RoPE|LSTM|GRU|RNN|CNN|GNN|GAN|MoE|RAG|RLHF|RLAIF|MCP|BPE|SGD|Adam|ReLU)\b/;
+const MODEL_RE = /\b(BERT|GPT|GPT-2|GPT-3|T5|CLIP|ELMo|GloVe|Word2Vec|ResNet|VGGNet|AlexNet|LeNet|Inception|GoogLeNet|FAISS|HNSW|Pinecone|pgvector|Exa|Claude|ChatGPT|Anthropic|RoPE|LSTM|GRU|RNN|CNN|GNN|GAN|MoE|RLHF|RLAIF|MCP|BPE|SGD|Adam|ReLU)\b/;
 function answerType(text){
   text = text || "";
   if (/\(\d{4}\)|\bet al\.?/.test(text)) return "person";   // "Harris (1954)", "LeCun et al. (1989)"
@@ -408,7 +408,7 @@ function vizFor(card){
     [/mlp|multilayer|hidden layer|backprop|feedforward|credit assignment/, "mlp"],
   ];
   for (const [re, type] of rules) if (re.test(t)) return type;
-  return { origins:"arc", foundations:"mlp", vision_sequence:"cnn", representations:"embedding", transformers_llms:"transformer" }[card.category] || "network";
+  return { origins:"arc", foundations:"mlp", vision_sequence:"cnn", representations:"embedding", transformers_llms:"transformer", local_ai:"rag" }[card.category] || "network";
 }
 
 /* ===========================================================

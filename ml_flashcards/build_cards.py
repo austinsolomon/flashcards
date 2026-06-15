@@ -21,6 +21,8 @@ CATEGORIES = [
      "instruction": "Embeddings, attention & vector search"},
     {"id": "transformers_llms","label": "Transformers & LLMs",
      "instruction": "Transformers, GPT-3, Claude & agents"},
+    {"id": "local_ai",         "label": "Local AI",
+     "instruction": "Private, on-prem LLMs & RAG"},
 ]
 
 DECK = {
@@ -301,13 +303,35 @@ DECK = {
 (5,"Transformers & LLMs — ReAct Agent Loop","The pattern interleaving reasoning with tool actions and observations.","ReAct","Yao et al. (2022); 'reason + act' cycles let an LLM plan, call tools, observe results and iterate — the basis of coding agents.",["agents","reasoning"],2022),
 (5,"Transformers & LLMs — Agentic Loop","The general cycle by which a tool-using LLM pursues a goal over many steps.","The agent loop","Modern agents (incl. Claude Code) repeatedly read state, decide an action, execute a tool, and incorporate feedback until done.",["agents"],2024),
 ],
+
+# =====================================================================
+# LOCAL AI — running private, on-prem LLMs over your own documents (RAG).
+"local_ai": [
+(1,"Local AI — Running models privately","Running an AI model on a computer you physically control, so confidential data never leaves your network — no cloud, no third party.","On-premises AI","'On-prem' / local inference is the core pitch for clients under NDA: the data stays in the building.",["localai","apply"],2023),
+(1,"Local AI — Free downloadable models","An LLM whose trained weights are published for download, so you can run it on your own hardware instead of paying per API call.","Open-weights model","Examples: Llama, Qwen, DeepSeek, Mistral — they make private, local AI affordable.",["localai","models"],2023),
+(1,"Local AI — Run a model in one command","The popular, beginner-friendly tool that downloads and runs open-weights LLMs locally with a single command.","Ollama","Wraps llama.cpp; the fastest way to get a local model talking.",["localai","tools"],2023),
+(1,"Local AI — A private ChatGPT screen","Free software giving a ChatGPT-style chat interface pointed at your own local model instead of OpenAI's servers.","Open WebUI","The friendly front-end employees actually use; embeddings and vector search stay hidden underneath.",["localai","tools"],2024),
+(1,"Local AI — Generation speed","The measure of how fast a model produces text; about 6–8 of these per second reads at natural speaking pace.","Tokens per second","A token is roughly three-quarters of a word; throughput depends on model size and hardware.",["localai","perf"],2023),
+(1,"Local AI — Where the model must fit","The fast memory a model's weights must load into to run — on a GPU, or shared 'unified memory' on Apple Silicon.","VRAM","If the model doesn't fit in this memory it won't load; bigger models need more.",["localai","hardware"],2023),
+(2,"Local AI — Answering from your own docs","The technique of retrieving the most relevant document chunks and feeding them to the model to ground its answer, instead of relying on memory.","Retrieval-Augmented Generation (RAG)","The backbone of a private document assistant: look the facts up fresh each time rather than retraining.",["localai","rag","apply"],2023),
+(2,"Local AI — Meaning as numbers","A list of numbers representing a text's meaning, letting a computer measure how related two pieces of text are.","Embedding","Chunks about the same topic get similar embeddings; this is what makes semantic retrieval possible.",["localai","rag"],2023),
+(2,"Local AI — The retrieval index","A store of embeddings that quickly finds the chunks most similar to a query — the search engine behind RAG.","Vector database","Examples: FAISS, Chroma, pgvector; it returns the handful of passages most relevant to a question.",["localai","rag"],2023),
+(2,"Local AI — Splitting the documents","Breaking long PDFs into small passages (a few paragraphs each) so they can be embedded and retrieved individually.","Chunking","Chunk size trades context against precision; it's a practical make-or-break for RAG quality.",["localai","rag"],2024),
+(2,"Local AI — Shrinking a model to fit","Compressing a model by storing its numbers at lower precision (e.g. 4-bit, 'Q4') so it fits in less memory.","Quantization","Q4 is a common quality/size sweet spot; lower (Q2) saves memory but degrades quality.",["localai","perf"],2023),
+(2,"Local AI — Teaching house style","Further training a model on a client's own data so it adopts their terminology, tone and formats.","Fine-tuning","A paid add-on in the consulting model; distinct from RAG, which supplies facts rather than changing the model.",["localai","apply"],2024),
+(2,"Local AI — Cheap fine-tuning","A lightweight fine-tuning method that trains a small set of extra weights instead of retraining the whole model.","LoRA","Low-Rank Adaptation makes customizing big models affordable on modest hardware.",["localai","apply"],2023),
+(3,"Local AI — Apple Silicon's trick","The shared memory on Apple Silicon that both CPU and GPU use, letting Macs run sizeable models without a discrete GPU.","Unified memory","A high-memory M-series Mac can be an always-on local inference box.",["localai","hardware"],2023),
+(3,"Local AI — Production serving engine","The high-throughput engine for serving open-weights models to many requests efficiently, versus simple single-user runners.","vLLM","Uses tricks like paged attention; chosen when a client needs a large model fast for many users.",["localai","tools"],2023),
+(3,"Local AI — The reliability promise","The contractual guarantee about uptime and response time that justifies a recurring monthly support fee.","Service-Level Agreement (SLA)","Keeping the model updated, indexing new docs and guaranteeing uptime is what clients pay monthly for.",["localai","business"],2024),
+(3,"Local AI — Why clients pay for local","The requirement that confidential data physically stay under the client's control — the entire value of an on-prem assistant.","Data sovereignty","For law firms or NDA-bound logistics firms, 'your data never leaves the building' is the whole pitch.",["localai","business"],2023),
+],
 }
 
 def slug(s):
     s = re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
     return s[:40]
 
-SHORT = {"origins":"org","foundations":"fnd","vision_sequence":"vsq","representations":"rep","transformers_llms":"llm"}
+SHORT = {"origins":"org","foundations":"fnd","vision_sequence":"vsq","representations":"rep","transformers_llms":"llm","local_ai":"lai"}
 
 def main():
     cards = []
