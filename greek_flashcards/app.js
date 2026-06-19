@@ -38,7 +38,6 @@ const els = {
   nextBtn: document.getElementById('nextBtn'),
   shuffleBtn: document.getElementById('shuffleBtn'),
   categoryFilter: document.getElementById('categoryFilter'),
-  modeToggle: document.getElementById('modeToggle'),
   typeMode: document.getElementById('typeMode'),
   audioReplay: document.getElementById('audioReplay'),
   typeInput: document.getElementById('typeInput'),
@@ -572,19 +571,19 @@ function playPromptAudio() {
   speak(text, lang, els.audioReplay);
 }
 
-// ---------- mode toggle ----------
-function loadMode() {
-  const m = localStorage.getItem('gf.mode');
-  return (m === 'type') ? 'type' : 'mc';
+// ---------- Audio Dictation pseudo-category ----------
+// Picking this in the dropdown switches to TYPE mode and pulls from the
+// whole deck minus single-letter / alphabet cards.
+const AUDIO_DICTATION = '__audio_dictation__';
+function isDictationable(card) {
+  const concept = card.concept || '';
+  if (concept.startsWith('Alphabet') || concept.startsWith('Letter')) return false;
+  if (concept.startsWith('Number')) return false;
+  const gr = (card.gr || [])[0] || '';
+  const en = (card.en || [])[0] || '';
+  const minSide = state.direction === 'en-to-gr' ? gr : en;
+  return (minSide.replace(/[^Α-Ωα-ωΆ-Ώά-ώA-Za-z]/g, '').length >= 2);
 }
-function saveMode() { localStorage.setItem('gf.mode', state.mode); }
-function setMode(mode) {
-  state.mode = (mode === 'type') ? 'type' : 'mc';
-  saveMode();
-  if (els.modeToggle) els.modeToggle.textContent = state.mode === 'type' ? 'TYPE' : 'MC';
-  render();
-}
-function toggleMode() { setMode(state.mode === 'type' ? 'mc' : 'type'); }
 
 function revealWithoutScoring() {
   if (state.currentAnswered) return;
@@ -839,14 +838,20 @@ function sortByDifficulty(cards) {
 }
 function applyCategoryFilter(cat) {
   state.category = cat;
-  state.inFilter = sortByDifficulty(cat ? state.all.filter(c => c.category === cat) : state.all.slice());
+  if (cat === AUDIO_DICTATION) {
+    state.mode = 'type';
+    state.inFilter = sortByDifficulty(state.all.filter(isDictationable));
+  } else {
+    state.mode = 'mc';
+    state.inFilter = sortByDifficulty(cat ? state.all.filter(c => c.category === cat) : state.all.slice());
+  }
   state.filtered = state.inFilter.filter(c => !isMastered(c.id));
   state.history = [];
   state.historyIdx = -1;
   state.currentCard = null;
   hideCompletion();
   if (state.filtered.length) {
-    next(); // adaptive first pick
+    next();
   } else {
     render();
   }
@@ -858,6 +863,14 @@ function populateCategoryFilter() {
     opt.value = c.id; opt.textContent = c.label;
     els.categoryFilter.appendChild(opt);
   });
+  const sep = document.createElement('option');
+  sep.disabled = true;
+  sep.textContent = '──────────';
+  els.categoryFilter.appendChild(sep);
+  const audio = document.createElement('option');
+  audio.value = AUDIO_DICTATION;
+  audio.textContent = 'Audio Dictation (listen + type)';
+  els.categoryFilter.appendChild(audio);
 }
 
 // ---------- copy ----------
@@ -975,8 +988,6 @@ async function load() {
   state.all = sortByDifficulty(data.cards || []);
   state.correctCounts = loadCounts();
   state.stats = loadStats();
-  state.mode = loadMode();
-  if (els.modeToggle) els.modeToggle.textContent = state.mode === 'type' ? 'TYPE' : 'MC';
   populateCategoryFilter();
   renderStats();
   applyCategoryFilter('');
@@ -989,7 +1000,6 @@ els.categoryFilter.addEventListener('change', e => applyCategoryFilter(e.target.
 els.resetStats.addEventListener('click', resetStats);
 els.completeRestart.addEventListener('click', restartCurrentCategory);
 els.completeClose.addEventListener('click', hideCompletion);
-if (els.modeToggle)  els.modeToggle.addEventListener('click', toggleMode);
 if (els.audioReplay) els.audioReplay.addEventListener('click', playPromptAudio);
 if (els.typeSubmit)  els.typeSubmit.addEventListener('click', submitTypedAnswer);
 if (els.typeInput)   els.typeInput.addEventListener('keydown', e => {
