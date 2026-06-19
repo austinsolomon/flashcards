@@ -18,6 +18,7 @@
     <span class="tb-stat"><span id="statStreak">0</span><i class="tb-sep">/</i><span id="dmHint">5</span></span>
     <span class="tb-stat tb-stat-dim"><span id="cardIndex">0</span><i class="tb-sep">/</i><span id="cardTotal">0</span></span>
     <button class="tb-btn" id="dirToggle" type="button" aria-label="Toggle direction">EN⇄GR</button>
+    <button class="tb-btn" id="modeToggle" type="button" aria-label="Toggle answer mode">MC</button>
     <button class="tb-btn tb-reset" id="resetStats" type="button" aria-label="Reset stats">⟲</button>
     <span class="tb-hidden" id="statBest">0</span>
     <span class="tb-hidden" id="statScore">0 / 0</span>
@@ -36,6 +37,15 @@
         <div class="prompt" id="prompt"></div>
         <button class="speak-btn" id="promptSpeak" type="button" hidden aria-label="Pronounce in Greek"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zm-2.5-7.5v2.05A5.99 5.99 0 0 1 18 12c0 2.61-1.67 4.84-4 5.65v2.05c3.39-.86 6-3.94 6-7.7s-2.61-6.84-6-7.45z"/></svg></button>
         <button class="copy-btn" data-copy="prompt" type="button" aria-label="Copy prompt">Copy</button>
+      </div>
+
+      <div class="type-mode hidden" id="typeMode">
+        <button class="audio-replay" id="audioReplay" type="button" aria-label="Replay audio">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4.03v8.05A4.5 4.5 0 0 0 16.5 12zm-2.5-7.5v2.05A5.99 5.99 0 0 1 18 12c0 2.61-1.67 4.84-4 5.65v2.05c3.39-.86 6-3.94 6-7.7s-2.61-6.84-6-7.45z"/></svg>
+          <span>Listen</span>
+        </button>
+        <input type="text" id="typeInput" class="type-input" placeholder="Type the translation…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" />
+        <button class="type-submit" id="typeSubmit" type="button">Check answer ›</button>
       </div>
 
       <div class="mc-options" id="mcOptions"></div>

@@ -17,6 +17,7 @@ const state = {
   // mascot bookkeeping
   heartPlacements: [],// {left, top, color, size, rot} kept until next wrong answer
   kissCount: 0,       // increments on every correct answer; every 10 → profile kiss
+  mode: 'mc',         // 'mc' = multiple choice (default), 'type' = audio + free text
 };
 
 const els = {
@@ -37,6 +38,11 @@ const els = {
   nextBtn: document.getElementById('nextBtn'),
   shuffleBtn: document.getElementById('shuffleBtn'),
   categoryFilter: document.getElementById('categoryFilter'),
+  modeToggle: document.getElementById('modeToggle'),
+  typeMode: document.getElementById('typeMode'),
+  audioReplay: document.getElementById('audioReplay'),
+  typeInput: document.getElementById('typeInput'),
+  typeSubmit: document.getElementById('typeSubmit'),
   instructionsStrip: document.getElementById('instructionsStrip'),
   statStreak: document.getElementById('statStreak'),
   statBest: document.getElementById('statBest'),
@@ -458,34 +464,19 @@ function renderMC(card, answerKey) {
   });
 }
 
-function onOptionClick(btn, picked, correct, card) {
-  if (state.currentAnswered) return;
-  state.currentAnswered = true;
-  const isCorrect = picked === correct;
+function applyAnswerResult(card, isCorrect) {
   recordAnswer(isCorrect);
-
-  [...els.mcOptions.children].forEach(b => {
-    b.classList.add('disabled');
-    if (b.textContent === correct) b.classList.add('correct');
-    if (b === btn && !isCorrect) b.classList.add('wrong');
-  });
-
   let msg;
   if (isCorrect) {
     state.kissCount++;
     const isProfileKiss = (state.kissCount % 10 === 0);
     triggerKiss(isProfileKiss);
     spawnHeart();
-    if (isProfileKiss) spawnHeartBurst(6); // bonus shower on every 10th
+    if (isProfileKiss) spawnHeartBurst(6);
     const { next, justMastered } = bumpCorrect(card.id);
-    if (justMastered) {
-      msg = 'Correct! ✩ Card MASTERED. ✩';
-    } else if (next < MASTERY_THRESHOLD) {
-      const remaining = MASTERY_THRESHOLD - next;
-      msg = `Correct! (${remaining} more correct to master this card.)`;
-    } else {
-      msg = 'Correct!';
-    }
+    if (justMastered) msg = 'Correct! ✩ Card MASTERED. ✩';
+    else if (next < MASTERY_THRESHOLD) msg = `Correct! (${MASTERY_THRESHOLD - next} more correct to master this card.)`;
+    else msg = 'Correct!';
   } else {
     resetCardCount(card.id);
     clearHearts();
@@ -493,17 +484,107 @@ function onOptionClick(btn, picked, correct, card) {
     const demoted = demoteOneMastered(card.category);
     if (demoted) msg += `  (Demoted "${demoted.concept || demoted.id}" back to the pool.)`;
   }
-
   els.feedback.textContent = msg;
   els.feedback.classList.remove('hidden');
   els.feedback.classList.toggle('ok', isCorrect);
   els.feedback.classList.toggle('bad', !isCorrect);
-
   els.answerRow.classList.remove('hidden');
   rebuildActivePool();
   renderProgressOnly();
   checkCompletion();
 }
+
+function onOptionClick(btn, picked, correct, card) {
+  if (state.currentAnswered) return;
+  state.currentAnswered = true;
+  const isCorrect = picked === correct;
+  [...els.mcOptions.children].forEach(b => {
+    b.classList.add('disabled');
+    if (b.textContent === correct) b.classList.add('correct');
+    if (b === btn && !isCorrect) b.classList.add('wrong');
+  });
+  applyAnswerResult(card, isCorrect);
+}
+
+// ---------- type-mode answer matching ----------
+function normalizeAnswer(s) {
+  return String(s || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')   // strip diacritics
+    .replace(/[.,;:!?·«»"'\-—–()]/g, '')                // strip punctuation
+    .replace(/\s+/g, ' ')                               // collapse spaces
+    .trim();
+}
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  const m = [];
+  for (let i = 0; i <= b.length; i++) m[i] = [i];
+  for (let j = 0; j <= a.length; j++) m[0][j] = j;
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      m[i][j] = b[i-1] === a[j-1]
+        ? m[i-1][j-1]
+        : Math.min(m[i-1][j-1] + 1, m[i][j-1] + 1, m[i-1][j] + 1);
+    }
+  }
+  return m[b.length][a.length];
+}
+function answerMatches(typed, expected) {
+  const t = normalizeAnswer(typed);
+  if (!t) return false;
+  const variants = Array.isArray(expected) ? expected : [expected];
+  for (const v of variants) {
+    const n = normalizeAnswer(v);
+    if (!n) continue;
+    if (t === n) return true;
+    // forgive minor typos: allow up to floor(len/6) edits, capped at 2.
+    const tolerance = Math.min(2, Math.floor(n.length / 6));
+    if (tolerance > 0 && levenshtein(t, n) <= tolerance) return true;
+  }
+  return false;
+}
+
+function submitTypedAnswer() {
+  if (state.currentAnswered) return;
+  const card = state.currentCard;
+  if (!card) return;
+  const answerKey = state.direction === 'en-to-gr' ? 'gr' : 'en';
+  const typed = els.typeInput.value;
+  if (!normalizeAnswer(typed)) return; // empty submission → ignore
+  state.currentAnswered = true;
+  const isCorrect = answerMatches(typed, card[answerKey]);
+  els.typeInput.disabled = true;
+  els.typeSubmit.disabled = true;
+  els.typeInput.classList.toggle('right', isCorrect);
+  els.typeInput.classList.toggle('wrong', !isCorrect);
+  applyAnswerResult(card, isCorrect);
+}
+
+// Play the prompt audio (English in EN→GR mode, Greek in GR→EN mode).
+function playPromptAudio() {
+  const card = state.currentCard;
+  if (!card) return;
+  const promptKey = state.direction === 'en-to-gr' ? 'en' : 'gr';
+  const text = (card[promptKey] || [])[0] || '';
+  const lang = promptKey === 'gr' ? 'el-GR' : 'en-US';
+  speak(text, lang, els.audioReplay);
+}
+
+// ---------- mode toggle ----------
+function loadMode() {
+  const m = localStorage.getItem('gf.mode');
+  return (m === 'type') ? 'type' : 'mc';
+}
+function saveMode() { localStorage.setItem('gf.mode', state.mode); }
+function setMode(mode) {
+  state.mode = (mode === 'type') ? 'type' : 'mc';
+  saveMode();
+  if (els.modeToggle) els.modeToggle.textContent = state.mode === 'type' ? 'TYPE' : 'MC';
+  render();
+}
+function toggleMode() { setMode(state.mode === 'type' ? 'mc' : 'type'); }
 
 function revealWithoutScoring() {
   if (state.currentAnswered) return;
@@ -654,7 +735,23 @@ function render() {
     els.answerBlocks.appendChild(block);
   });
 
-  renderMC(card, answerKey);
+  // Branch on mode: MC list vs Type (audio + free-text)
+  if (state.mode === 'type') {
+    els.mcOptions.classList.add('hidden');
+    els.typeMode.classList.remove('hidden');
+    els.prompt.parentElement.classList.add('hidden');  // hide prompt text — audio only
+    els.typeInput.value = '';
+    els.typeInput.disabled = false;
+    els.typeSubmit.disabled = false;
+    els.typeInput.classList.remove('right', 'wrong');
+    // Auto-play the prompt once. Triggered from a click handler so iOS allows it.
+    requestAnimationFrame(playPromptAudio);
+  } else {
+    els.typeMode.classList.add('hidden');
+    els.mcOptions.classList.remove('hidden');
+    els.prompt.parentElement.classList.remove('hidden');
+    renderMC(card, answerKey);
+  }
 
   if (card.notes) {
     els.notes.textContent = card.notes;
@@ -878,6 +975,8 @@ async function load() {
   state.all = sortByDifficulty(data.cards || []);
   state.correctCounts = loadCounts();
   state.stats = loadStats();
+  state.mode = loadMode();
+  if (els.modeToggle) els.modeToggle.textContent = state.mode === 'type' ? 'TYPE' : 'MC';
   populateCategoryFilter();
   renderStats();
   applyCategoryFilter('');
@@ -890,6 +989,12 @@ els.categoryFilter.addEventListener('change', e => applyCategoryFilter(e.target.
 els.resetStats.addEventListener('click', resetStats);
 els.completeRestart.addEventListener('click', restartCurrentCategory);
 els.completeClose.addEventListener('click', hideCompletion);
+if (els.modeToggle)  els.modeToggle.addEventListener('click', toggleMode);
+if (els.audioReplay) els.audioReplay.addEventListener('click', playPromptAudio);
+if (els.typeSubmit)  els.typeSubmit.addEventListener('click', submitTypedAnswer);
+if (els.typeInput)   els.typeInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); submitTypedAnswer(); }
+});
 
 document.addEventListener('keydown', e => {
   if (e.target.matches('input, textarea, select')) return;
