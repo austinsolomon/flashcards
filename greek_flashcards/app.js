@@ -736,14 +736,23 @@ function render() {
 
   // Branch on mode: MC list vs Type (audio + free-text)
   if (state.mode === 'type') {
+    // Tear down anything left over from MC / from the previous TYPE card
+    els.mcOptions.innerHTML = '';
     els.mcOptions.classList.add('hidden');
+    els.feedback.textContent = '';
+    els.feedback.classList.add('hidden');
+    els.feedback.classList.remove('ok', 'bad');
+    els.answerRow.classList.add('hidden');
+    state.currentAnswered = false;
+    // Hide the prompt text — audio only in dictation mode
+    els.prompt.parentElement.classList.add('hidden');
+    // Reveal the TYPE UI and reset its inputs every card
     els.typeMode.classList.remove('hidden');
-    els.prompt.parentElement.classList.add('hidden');  // hide prompt text — audio only
     els.typeInput.value = '';
     els.typeInput.disabled = false;
-    els.typeSubmit.disabled = false;
     els.typeInput.classList.remove('right', 'wrong');
-    // Auto-play the prompt once. Triggered from a click handler so iOS allows it.
+    els.typeSubmit.disabled = false;
+    // Auto-play the prompt audio. Fires from the Next-click stack so iOS allows it.
     requestAnimationFrame(playPromptAudio);
   } else {
     els.typeMode.classList.add('hidden');
