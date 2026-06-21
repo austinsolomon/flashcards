@@ -1058,3 +1058,33 @@ body {
 }
 .type-submit:active { transform: translateY(2px); box-shadow: 0 2px 0 #4f8a00; }
 .type-submit:disabled { opacity: 0.5; cursor: default; }
+
+/* ---------- Audio Dictation sub-mode instruction strip ---------- */
+.type-instruction {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 2px dashed;
+  background: #fff0fa;
+}
+/* Greek audio → English typed: hot-pink accent */
+.type-mode.di-gr-en .type-instruction {
+  color: var(--hot);
+  border-color: var(--hot);
+  background: linear-gradient(135deg, #fff0fa, #ffe2f3);
+}
+/* English audio → Greek typed: cyan accent */
+.type-mode.di-en-gr .type-instruction {
+  color: #006a80;
+  border-color: var(--cyan);
+  background: linear-gradient(135deg, #e6fbff, #ccf3ff);
+}
+/* Greek audio → Greek typed (transcription): lime accent */
+.type-mode.di-gr-gr .type-instruction {
+  color: #2a6a00;
+  border-color: #5bbf00;
+  background: linear-gradient(135deg, #f0ffd6, #e0ffb8);
+}
