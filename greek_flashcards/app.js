@@ -18,7 +18,47 @@ const state = {
   heartPlacements: [],// {left, top, color, size, rot} kept until next wrong answer
   kissCount: 0,       // increments on every correct answer; every 10 → profile kiss
   mode: 'mc',         // 'mc' = multiple choice (default), 'type' = audio + free text
+  // Audio Dictation sub-mode tracking (one of gr_en / en_gr / gr_gr per card)
+  dictationModesHistory: [],
+  dictationModeCounter: 0,
 };
+
+// Even-split rotation across the three Audio Dictation sub-modes.
+// Each new card in Audio Dictation gets the next mode in sequence so the
+// distribution stays at exactly 1/3 each over time.
+const DICTATION_MODES = {
+  gr_en: {
+    promptKey: 'gr',
+    answerKey: 'en',
+    audioLang: 'el-GR',
+    label: 'Listen in GREEK → type the English translation',
+    cls: 'di-gr-en',
+  },
+  en_gr: {
+    promptKey: 'en',
+    answerKey: 'gr',
+    audioLang: 'en-US',
+    label: 'Listen in ENGLISH → type the Greek translation',
+    cls: 'di-en-gr',
+  },
+  gr_gr: {
+    promptKey: 'gr',
+    answerKey: 'gr',
+    audioLang: 'el-GR',
+    label: 'Listen in GREEK → type back what you hear (in Greek)',
+    cls: 'di-gr-gr',
+  },
+};
+const DICTATION_ORDER = ['gr_en', 'en_gr', 'gr_gr'];
+function pickDictationMode() {
+  const m = DICTATION_ORDER[state.dictationModeCounter % 3];
+  state.dictationModeCounter++;
+  return m;
+}
+function currentDictationMode() {
+  if (state.mode !== 'type') return null;
+  return state.dictationModesHistory[state.historyIdx] || null;
+}
 
 const els = {
   deckName: document.getElementById('deckName'),
@@ -39,6 +79,7 @@ const els = {
   shuffleBtn: document.getElementById('shuffleBtn'),
   categoryFilter: document.getElementById('categoryFilter'),
   typeMode: document.getElementById('typeMode'),
+  typeInstruction: document.getElementById('typeInstruction'),
   audioReplay: document.getElementById('audioReplay'),
   typeInput: document.getElementById('typeInput'),
   typeSubmit: document.getElementById('typeSubmit'),
@@ -549,7 +590,9 @@ function submitTypedAnswer() {
   if (state.currentAnswered) return;
   const card = state.currentCard;
   if (!card) return;
-  const answerKey = state.direction === 'en-to-gr' ? 'gr' : 'en';
+  const sub = currentDictationMode();
+  const answerKey = sub ? DICTATION_MODES[sub].answerKey
+                        : (state.direction === 'en-to-gr' ? 'gr' : 'en');
   const typed = els.typeInput.value;
   if (!normalizeAnswer(typed)) return; // empty submission → ignore
   state.currentAnswered = true;
@@ -561,13 +604,23 @@ function submitTypedAnswer() {
   applyAnswerResult(card, isCorrect);
 }
 
-// Play the prompt audio (English in EN→GR mode, Greek in GR→EN mode).
+// Play the prompt audio. In Audio Dictation, the language/text come
+// from the card's assigned dictation sub-mode (gr_en / en_gr / gr_gr).
+// Otherwise falls back to the EN⇄GR direction toggle (legacy TYPE).
 function playPromptAudio() {
   const card = state.currentCard;
   if (!card) return;
-  const promptKey = state.direction === 'en-to-gr' ? 'en' : 'gr';
+  let promptKey, lang;
+  const sub = currentDictationMode();
+  if (sub) {
+    const cfg = DICTATION_MODES[sub];
+    promptKey = cfg.promptKey;
+    lang = cfg.audioLang;
+  } else {
+    promptKey = state.direction === 'en-to-gr' ? 'en' : 'gr';
+    lang = promptKey === 'gr' ? 'el-GR' : 'en-US';
+  }
   const text = (card[promptKey] || [])[0] || '';
-  const lang = promptKey === 'gr' ? 'el-GR' : 'en-US';
   speak(text, lang, els.audioReplay);
 }
 
@@ -752,6 +805,18 @@ function render() {
     els.typeInput.disabled = false;
     els.typeInput.classList.remove('right', 'wrong');
     els.typeSubmit.disabled = false;
+    // Per-card instruction based on the sub-mode chosen for this slot
+    const sub = currentDictationMode();
+    if (sub && els.typeInstruction) {
+      const cfg = DICTATION_MODES[sub];
+      els.typeInstruction.textContent = cfg.label;
+      els.typeMode.classList.remove('di-gr-en', 'di-en-gr', 'di-gr-gr');
+      els.typeMode.classList.add(cfg.cls);
+      els.typeInput.setAttribute('lang', cfg.answerKey === 'gr' ? 'el-GR' : 'en-US');
+      els.typeInput.placeholder = cfg.answerKey === 'gr'
+        ? 'Type the Greek translation…'
+        : 'Type the English translation…';
+    }
     // Auto-play the prompt audio. Fires from the Next-click stack so iOS allows it.
     requestAnimationFrame(playPromptAudio);
   } else {
@@ -813,7 +878,11 @@ function next() {
   const card = pickNextCard();
   if (!card) { render(); return; }
   state.history.push(card);
-  if (state.history.length > 60) state.history.shift();
+  state.dictationModesHistory.push(state.mode === 'type' ? pickDictationMode() : null);
+  if (state.history.length > 60) {
+    state.history.shift();
+    state.dictationModesHistory.shift();
+  }
   state.historyIdx = state.history.length - 1;
   gotoCard(card);
 }
@@ -856,6 +925,8 @@ function applyCategoryFilter(cat) {
   }
   state.filtered = state.inFilter.filter(c => !isMastered(c.id));
   state.history = [];
+  state.dictationModesHistory = [];
+  state.dictationModeCounter = 0;
   state.historyIdx = -1;
   state.currentCard = null;
   hideCompletion();
