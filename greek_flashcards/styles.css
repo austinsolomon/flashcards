@@ -1088,3 +1088,12 @@ body {
   border-color: #5bbf00;
   background: linear-gradient(135deg, #f0ffd6, #e0ffb8);
 }
+
+/* ---------- audio is exclusive to Audio Dictation ---------- */
+/* All speaker buttons (prompt-row chip, answer-block chips, per-row
+   verb-conjugation chips) are hidden whenever we're in MC mode. They
+   only appear when state.mode === 'type' (i.e. the user picked the
+   Audio Dictation category). The big Audio Dictation Listen button
+   has a different class (.audio-replay) so it stays put. */
+body.mode-mc .speak-btn,
+body.mode-mc .vc-speak { display: none !important; }
