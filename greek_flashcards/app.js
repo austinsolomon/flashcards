@@ -788,6 +788,8 @@ function render() {
   });
 
   // Branch on mode: MC list vs Type (audio + free-text)
+  document.body.classList.toggle('mode-mc',   state.mode === 'mc');
+  document.body.classList.toggle('mode-type', state.mode === 'type');
   if (state.mode === 'type') {
     // Tear down anything left over from MC / from the previous TYPE card
     els.mcOptions.innerHTML = '';
